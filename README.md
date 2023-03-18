@@ -22,17 +22,23 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [ ] uTorrent/qBittorrent integration
 
 ### Future:
+- [ ] install.sh shell
+- [ ] CI testing/package generation
 - [ ] Image preview
 - [ ] Video thumbnail generator
 - [ ] CLI support
 - [ ] UI Customisation
 
 
-# Installation
+## Installation
+### Build from source
+1. Follow the instruction [here](https://www.rust-lang.org/tools/install) to install the Rust toolchain, including `cargo`.
+2. Execute `cargo install --git https://github.com/fieryfurry/qtm2` in your terminal
 
+### Prebuilt binaries
+Upcoming...
 
-
-# License
+## License
 QTM2 is licensed under the [BSD-2-Clause Plus Patent License](https://spdx.org/licenses/BSD-2-Clause-Patent.html). 
 
 This license is designed to provide: a) a simple permissive license; b) that is compatible with the GNU General Public License (GPL), version 2; and c) which also has an express patent grant included. 

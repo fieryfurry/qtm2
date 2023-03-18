@@ -11,8 +11,8 @@ use directories::ProjectDirs;
 use eframe::egui;
 use eframe::egui::TextStyle::*;
 use eframe::egui::{
-    vec2, widgets, Align, Color32, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea, Style,
-    Visuals,
+    vec2, widgets, Align, Color32, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea,
+    Style, Visuals,
 };
 use eframe::egui::{FontFamily, Frame, Margin, Rounding};
 use strum::IntoEnumIterator;
@@ -28,7 +28,7 @@ mod selectable_table;
 
 fn main() -> Result<()> {
     // Project directory
-    let proj_dirs = ProjectDirs::from("proton.me", "fiery-furry", "quick-torrent-maker-2").ok_or(
+    let proj_dirs = ProjectDirs::from("proton.me", "fieryfurry", "quick-torrent-maker-2").ok_or(
         io::Error::new(ErrorKind::NotFound, "No valid home directory path found"),
     )?;
 
@@ -50,7 +50,7 @@ fn main() -> Result<()> {
                 warning = "Unable to find configuration file; \
                 IGNORE this warning if initialising for the first time"
             );
-            "".to_string()
+            "".to_owned()
         });
     let config: QtmConfig = toml::from_str(&config_file).unwrap_or_else(|err| {
         warn!(
@@ -137,6 +137,26 @@ impl Qtm {
         style.visuals.widgets.inactive.fg_stroke.color = Color32::BLACK;
 
         // Fonts
+        fonts.font_data.insert(
+            "inter".to_owned(),
+            FontData::from_static(include_bytes!("../res/Inter-Light.otf")),
+        );
+
+        fonts.font_data.insert(
+            "source-code-pro".to_owned(),
+            FontData::from_static(include_bytes!("../res/SourceCodePro-Regular.otf")),
+        );
+
+        fonts
+            .families
+            .get_mut(&FontFamily::Proportional)
+            .unwrap()
+            .insert(0, "inter".to_owned());
+        fonts
+            .families
+            .get_mut(&FontFamily::Monospace)
+            .unwrap()
+            .insert(0, "source-code-pro".to_owned());
 
         cc.egui_ctx.set_style(style);
         cc.egui_ctx.set_fonts(fonts);
@@ -149,8 +169,8 @@ impl Qtm {
             categories: [Category::None; 5],
             images: Vec::new(),
             selected_index: None,
-            title: "".to_string(),
-            description: "".to_string(),
+            title: "".to_owned(),
+            description: "".to_owned(),
         }
     }
 
@@ -245,7 +265,7 @@ impl eframe::App for Qtm {
 
                         for number in 0..5 {
                             ui.label(if number == 0 {
-                                "Category:".to_string()
+                                "Category:".to_owned()
                             } else {
                                 format!("Sub-category {number}:")
                             });

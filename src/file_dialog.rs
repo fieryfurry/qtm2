@@ -41,19 +41,20 @@ pub(crate) fn select_content(
         .map(|c| {
             (
                 c.clone(),
-                c.to_str().unwrap().to_string(),
+                c.to_str().unwrap().to_owned(),
                 fs_extra::dir::get_size(&c).unwrap(),
             )
         })
 }
 
+// TODO: Add all supported file extensions
 pub(crate) fn select_image(default_directory: Option<&Path>) -> Option<Image> {
     create_file_dialog(default_directory)
         .add_filter("image", &["png", "PNG", "jpg", "JPG", "jpeg", "JPEG", "gif", "GIF"])
         .pick_file()
         .map(|f| Image {
             path: f.clone(),
-            filename: f.file_name().unwrap().to_str().unwrap().to_string(),
+            filename: f.file_name().unwrap().to_str().unwrap().to_owned(),
             size: f.metadata().unwrap().len(),
         })
 }
