@@ -1,6 +1,8 @@
 # Quick Torrent Maker 2 (QTM2)
 QTM2 is a cross-platform application that aims to integrate creating and uploading torrents to [GayTorrent](https://www.gaytor.rent/), in order to produce more quality and descriptive contents easier from most modern operating system platforms (Windows / macOS / Linux). It is written in **Rust**, a fast and memory-safe general purpose programming language, using egui and other library crates as well as fonts that may be found in the [Cargo.toml](Cargo.toml) and [LICENSE.md](LICENSE.md) files.
 
+![screenshot](screenshot.png)
+
 This is a project that is undergoing active development, so bugs are possible. Please report any [here](#TODO) with detailed descriptions of your system configuration and steps to reproduce the bug. You may also suggest new features [here](#TODO) to be added to the roadmap section below. 
 
 Please observe and follow all GT [site rules](https://www.gaytor.rent/rules.php) and refer to the [FAQs](https://www.gaytor.rent/faq.php) and [help desk](https://www.gaytor.rent/helpdesk.php) for other queries/issues. Please act responsibly and respect other members of the community.

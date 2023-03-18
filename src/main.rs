@@ -42,6 +42,8 @@ fn main() -> Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
+    // TODO: Add more tracing
+
     // Config init
     let config_file = fs::read_to_string(proj_dirs.config_dir().join("config.toml"))
         .unwrap_or_else(|err| {
@@ -52,6 +54,7 @@ fn main() -> Result<()> {
             );
             "".to_owned()
         });
+
     let config: QtmConfig = toml::from_str(&config_file).unwrap_or_else(|err| {
         warn!(
             ?err,
@@ -61,6 +64,8 @@ fn main() -> Result<()> {
         info!("Load default configuration");
         QtmConfig::default()
     });
+    // TODO: Add deserialising/saving config
+    //       Change UI appearance based on config
 
     // Egui init
     eframe::run_native(
