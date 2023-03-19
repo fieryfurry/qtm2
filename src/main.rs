@@ -1,36 +1,83 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
 use std::fmt::Debug;
-use std::io::ErrorKind;
+use std::fs;
+use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
-use std::{fs, io};
 
 use anyhow::Result;
 use bytesize::ByteSize;
 use directories::ProjectDirs;
 use eframe::egui;
 use eframe::egui::TextStyle::*;
-use eframe::egui::{
-    vec2, widgets, Align, Color32, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea,
-    Style, Visuals,
-};
+use eframe::egui::{vec2, widgets, Align, Color32, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea, Style, Visuals, Vec2};
 use eframe::egui::{FontFamily, Frame, Margin, Rounding};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
-use tracing::{debug, error, info, warn, Level};
+use tracing::{info, warn, Level};
 
-use crate::qtm_config::QtmConfig;
+use crate::qtm_config::{QtmConfig, QtmTheme};
 use crate::selectable_table::{Column, TableBuilder};
 
 mod file_dialog;
 mod qtm_config;
 mod selectable_table;
+mod unwrap_trace;
+
+fn proj_dirs() -> Result<ProjectDirs> {
+    ProjectDirs::from("proton.me", "fieryfurry", "quick-torrent-maker-2").ok_or(
+        anyhow::Error::from(Error::new(
+            ErrorKind::NotFound,
+            "No valid home directory path found",
+        )),
+    )
+}
+
+fn get_style_by_theme(theme: QtmTheme) -> Style {
+    let mut style = Style {
+        text_styles: [
+            (Heading, FontId::new(30.0, FontFamily::Proportional)),
+            (Body, FontId::new(18.0, FontFamily::Proportional)),
+            (Monospace, FontId::new(14.0, FontFamily::Monospace)),
+            (Button, FontId::new(18.0, FontFamily::Proportional)),
+            (Small, FontId::new(14.0, FontFamily::Proportional)),
+        ]
+        .into(),
+        ..Default::default()
+    };
+    style.spacing.window_margin = Margin::same(20.0);
+    if theme == QtmTheme::Light {
+        style.visuals = Visuals::light();
+        style.visuals.window_fill = Color32::LIGHT_GRAY;
+        style.visuals.widgets.noninteractive.fg_stroke.color = Color32::BLACK;
+        style.visuals.widgets.inactive.fg_stroke.color = Color32::BLACK;
+    } else {
+        style.visuals = Visuals::dark();
+        style.visuals.window_fill = Color32::from_rgb(24, 24, 24);
+        style.visuals.widgets.noninteractive.fg_stroke.color = Color32::WHITE;
+        style.visuals.widgets.inactive.fg_stroke.color = Color32::WHITE;
+    }
+    style.visuals.window_rounding = Rounding::none();
+    style.visuals.widgets.inactive.bg_stroke = style.visuals.widgets.noninteractive.bg_stroke;
+    style
+}
 
 fn main() -> Result<()> {
     // Project directory
-    let proj_dirs = ProjectDirs::from("proton.me", "fieryfurry", "quick-torrent-maker-2").ok_or(
-        io::Error::new(ErrorKind::NotFound, "No valid home directory path found"),
-    )?;
+    let proj_dirs = proj_dirs()?;
+    // Create folders if they do not exist
+    if !proj_dirs.config_dir().exists() {
+        if let Err(err) = fs::create_dir_all(proj_dirs.config_dir()) {
+            warn!(?err, "Unable to create configuration folder; exiting");
+            return Err(anyhow::Error::from(err));
+        }
+    }
+    if !proj_dirs.data_local_dir().exists() {
+        if let Err(err) = fs::create_dir_all(proj_dirs.data_local_dir()) {
+            warn!(?err, "Unable to create data folder; exiting");
+            return Err(anyhow::Error::from(err));
+        }
+    }
 
     // Tracing init
     let file_appender = tracing_appender::rolling::daily(proj_dirs.data_local_dir(), "qtm2.log");
@@ -42,30 +89,8 @@ fn main() -> Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    // TODO: Add more tracing
-
     // Config init
-    let config_file = fs::read_to_string(proj_dirs.config_dir().join("config.toml"))
-        .unwrap_or_else(|err| {
-            warn!(
-                ?err,
-                warning = "Unable to find configuration file; \
-                IGNORE this warning if initialising for the first time"
-            );
-            "".to_owned()
-        });
-
-    let config: QtmConfig = toml::from_str(&config_file).unwrap_or_else(|err| {
-        warn!(
-            ?err,
-            warning = "Unable to deserialize the configuration file \
-        IGNORE this warning if initialising for the first time"
-        );
-        info!("Load default configuration");
-        QtmConfig::default()
-    });
-    // TODO: Add deserialising/saving config
-    //       Change UI appearance based on config
+    let config = QtmConfig::load(proj_dirs.config_dir().join("config.toml"));
 
     // Egui init
     eframe::run_native(
@@ -121,27 +146,12 @@ pub(crate) struct Image {
 
 impl Qtm {
     fn new(cc: &eframe::CreationContext<'_>, config: QtmConfig) -> Self {
-        let mut style = Style::default();
-        let mut fonts = FontDefinitions::default();
-
         // Style
-        style.text_styles = [
-            (Heading, FontId::new(30.0, FontFamily::Proportional)),
-            (Body, FontId::new(18.0, FontFamily::Proportional)),
-            (Monospace, FontId::new(14.0, FontFamily::Monospace)),
-            (Button, FontId::new(18.0, FontFamily::Proportional)),
-            (Small, FontId::new(14.0, FontFamily::Proportional)),
-        ]
-        .into();
-        style.spacing.window_margin = Margin::same(20.0);
-        style.visuals = Visuals::light();
-        style.visuals.window_fill = Color32::LIGHT_GRAY;
-        style.visuals.window_rounding = Rounding::none();
-        style.visuals.widgets.inactive.bg_stroke = style.visuals.widgets.noninteractive.bg_stroke;
-        style.visuals.widgets.noninteractive.fg_stroke.color = Color32::BLACK;
-        style.visuals.widgets.inactive.fg_stroke.color = Color32::BLACK;
+        let style = get_style_by_theme(config.theme);
 
         // Fonts
+        let mut fonts = FontDefinitions::default();
+
         fonts.font_data.insert(
             "inter".to_owned(),
             FontData::from_static(include_bytes!("../res/Inter-Light.otf")),
@@ -187,15 +197,36 @@ impl Qtm {
 impl eframe::App for Qtm {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel")
-            .exact_height(50.)
-            .show(ctx, |ui| {});
+            .exact_height(25.)
+            .show(ctx, |ui| {
+                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                    if ui
+                        .add_sized(
+                            vec2(ui.available_height(), ui.available_height()),
+                            widgets::Button::new(if self.config.theme == QtmTheme::Light {
+                                "☼"
+                            } else {
+                                "☀"
+                            }),
+                        )
+                        .clicked()
+                    {
+                        self.config.theme = -self.config.theme;
+                        self.config
+                            .save(proj_dirs().unwrap().config_dir().join("config.toml"));
+
+                        ctx.set_style(get_style_by_theme(self.config.theme));
+                        info!("theme changed to {}", self.config.theme);
+                    }
+                });
+            });
 
         egui::TopBottomPanel::bottom("bottom_panel")
-            .exact_height(50.)
+            .exact_height(40.)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if ui
-                        .add_sized(vec2(200., 20.), widgets::Button::new("Upload torrent"))
+                        .add_sized(vec2(150., 20.), widgets::Button::new("Upload torrent"))
                         .clicked()
                     {
                         self.upload();
