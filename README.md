@@ -33,6 +33,21 @@ Please also note that the binary and its data structures are referred to as `qtm
 
 
 ## Installation
+### Install dependencies (Linux ONLY)
+note: dependency installation _only_ tested on Ubuntu
+#### Debian/Ubuntu
+```
+sudo apt-get install libatk1.0-0 libgtk-3-dev
+```
+#### Arch Linux
+```
+sudo pacman -S atk-git gtk3
+```
+#### Fedora
+```
+sudo dnf install atk gtk3-devel
+```
+
 ### Build from source
 1. Follow the instruction [here](https://www.rust-lang.org/tools/install) to install the Rust toolchain, including `cargo`.
 2. Execute `cargo install --git https://github.com/fieryfurry/qtm2` in your terminal
