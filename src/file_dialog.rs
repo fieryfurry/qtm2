@@ -26,7 +26,7 @@ impl Pred for FileDialog {}
 
 fn create_file_dialog(default_directory: Option<&Path>) -> FileDialog {
     FileDialog::new().pred(
-        |_| default_directory.is_some() && default_directory.unwrap().is_dir(),
+        |_| default_directory.is_some() && default_directory.unwrap().exists() && default_directory.unwrap().is_dir(),
         |dir| dir.set_directory(default_directory.unwrap()),
         |dir| dir,
     )
@@ -41,7 +41,7 @@ pub(crate) fn select_content(
         .map(|c| {
             (
                 c.clone(),
-                c.to_str().unwrap().to_owned(),
+                c.to_string_lossy().into_owned(),
                 fs_extra::dir::get_size(&c).unwrap(),
             )
         })
@@ -54,7 +54,7 @@ pub(crate) fn select_image(default_directory: Option<&Path>) -> Option<Image> {
         .pick_file()
         .map(|f| Image {
             path: f.clone(),
-            filename: f.file_name().unwrap().to_str().unwrap().to_owned(),
+            filename: f.file_name().unwrap().to_string_lossy().into_owned(),
             size: f.metadata().unwrap().len(),
         })
 }

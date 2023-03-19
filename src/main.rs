@@ -10,12 +10,16 @@ use bytesize::ByteSize;
 use directories::ProjectDirs;
 use eframe::egui;
 use eframe::egui::TextStyle::*;
-use eframe::egui::{vec2, widgets, Align, Color32, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea, Style, Visuals, Vec2};
+use eframe::egui::{
+    vec2, widgets, Align, Color32, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea,
+    Style, Visuals,
+};
 use eframe::egui::{FontFamily, Frame, Margin, Rounding};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 use tracing::{info, warn, Level};
 
+use crate::file_dialog::select_content;
 use crate::qtm_config::{QtmConfig, QtmTheme};
 use crate::selectable_table::{Column, TableBuilder};
 
@@ -31,6 +35,14 @@ fn proj_dirs() -> Result<ProjectDirs> {
             "No valid home directory path found",
         )),
     )
+}
+
+fn config_dir(filename: &str) -> PathBuf {
+    proj_dirs().unwrap().config_dir().join(filename)
+}
+
+fn data_local_dir(filename: &str) -> PathBuf {
+    proj_dirs().unwrap().data_local_dir().join(filename)
 }
 
 fn get_style_by_theme(theme: QtmTheme) -> Style {
@@ -89,8 +101,12 @@ fn main() -> Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
+    info!("Started application");
+
     // Config init
-    let config = QtmConfig::load(proj_dirs.config_dir().join("config.toml"));
+    let config = QtmConfig::load(config_dir("config.toml"));
+
+    info!("Loaded configuration");
 
     // Egui init
     eframe::run_native(
@@ -114,8 +130,6 @@ fn main() -> Result<()> {
 
 struct Qtm {
     config: QtmConfig,
-
-    default_directory: Option<PathBuf>,
 
     is_file: bool,
     content: Option<(PathBuf, String, u64)>,
@@ -146,6 +160,8 @@ pub(crate) struct Image {
 
 impl Qtm {
     fn new(cc: &eframe::CreationContext<'_>, config: QtmConfig) -> Self {
+        info!("Started GUI");
+
         // Style
         let style = get_style_by_theme(config.theme);
 
@@ -178,7 +194,6 @@ impl Qtm {
 
         Self {
             config,
-            default_directory: None,
             is_file: true,
             content: None,
             categories: [Category::None; 5],
@@ -213,10 +228,24 @@ impl eframe::App for Qtm {
                     {
                         self.config.theme = -self.config.theme;
                         self.config
-                            .save(proj_dirs().unwrap().config_dir().join("config.toml"));
+                            .save(config_dir("config.toml"));
 
                         ctx.set_style(get_style_by_theme(self.config.theme));
-                        info!("theme changed to {}", self.config.theme);
+                        info!("Theme changed to {}", self.config.theme);
+                    }
+
+                    if ui
+                        .add_sized(
+                            vec2(ui.available_height(), ui.available_height()),
+                            widgets::Button::new("☆"),
+                        )
+                        .clicked()
+                    {
+                        if let Some((path, _, _)) = select_content(false, self.config.default_directory.as_deref()) {
+                            info!("Default directory changed to {}", path.to_string_lossy());
+                            self.config.default_directory = Some(path);
+                            self.config.save(config_dir("config.toml"));
+                        }
                     }
                 });
             });
@@ -270,9 +299,9 @@ impl eframe::App for Qtm {
                                     .add(egui::Button::new("...").min_size(vec2(40., 10.)))
                                     .clicked()
                                 {
-                                    self.content = file_dialog::select_content(
+                                    self.content = select_content(
                                         self.is_file,
-                                        self.default_directory.as_deref(),
+                                        self.config.default_directory.as_deref(),
                                     );
                                 }
                             });
@@ -355,7 +384,7 @@ impl eframe::App for Qtm {
                                         .clicked()
                                     {
                                         if let Some(image) = file_dialog::select_image(
-                                            self.default_directory.as_deref(),
+                                            self.config.default_directory.as_deref(),
                                         ) {
                                             self.images.push(image);
                                         }

@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 use std::fs;
 use std::ops::Neg;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
@@ -11,10 +11,11 @@ use tracing::warn;
 
 use crate::unwrap_trace::UnwrapTrace;
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct QtmConfig {
     pub(crate) version: QtmVersion,
     pub(crate) theme: QtmTheme,
+    pub(crate) default_directory: Option<PathBuf>,
 }
 
 impl Default for QtmConfig {
@@ -22,6 +23,7 @@ impl Default for QtmConfig {
         QtmConfig {
             version: QtmVersion::get_current_version(),
             theme: QtmTheme::Light,
+            default_directory: None,
         }
     }
 }
@@ -47,8 +49,6 @@ impl QtmConfig {
             warn!(?self, "Unable to serialise or hence save the configuration; saving aborted");
             return;
         };
-
-
 
         fs::write(path, config).unwrap_or_warn(
             "Unable to save the serialised configuration; saving aborted",
