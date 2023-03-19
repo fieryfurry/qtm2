@@ -32,6 +32,7 @@ jobs:
   
     runs-on: macos-latest
   
+    steps:
     - uses: actions/checkout@v3
     - name: Build macOS
       run: cargo build --verbose
