@@ -16,7 +16,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Build Ubuntu
     - run: sudo apt-get install libatk1.0-0
     - run: cargo build --verbose
 
@@ -26,8 +25,7 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
-    - name: Build Windows
-      run: cargo build --verbose
+    - run: cargo build --verbose
   
   build-macos:
   
@@ -35,5 +33,4 @@ jobs:
   
     steps:
     - uses: actions/checkout@v3
-    - name: Build macOS
-      run: cargo build --verbose
+    - run: cargo build --verbose
