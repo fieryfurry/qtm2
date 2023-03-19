@@ -1,4 +1,10 @@
 # Quick Torrent Maker 2 (QTM2)
+
+![GitHub top language](https://img.shields.io/github/languages/top/fieryfurry/qtm2?color=orange&logo=rust&logoColor=orange)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/fieryfurry/qtm2/rust.yml?logo=github)
+[![License](https://img.shields.io/badge/license-BSD--2--Clause%20Plus%20Patent-green)](https://spdx.org/licenses/BSD-2-Clause-Patent.html)
+![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
+
 QTM2 is a cross-platform application that aims to integrate creating and uploading torrents to [GayTorrent](https://www.gaytor.rent/), in order to produce more quality and descriptive contents easier from most modern operating system platforms (Windows / macOS / Linux). It is written in **Rust**, a fast and memory-safe general purpose programming language, using egui and other library crates as well as fonts that may be found in the [Cargo.toml](Cargo.toml) and [LICENSE.md](LICENSE.md) files.
 
 ![screenshot](screenshot.png)
@@ -9,6 +15,7 @@ Please observe and follow all GT [site rules](https://www.gaytor.rent/rules.php)
 
 Please also note that the binary and its data structures are referred to as `qtm` in the source code only for brevity; it is not derived from nor associated with the source code or the authors/contributors of the original QTM at all; however, the UI and many functionalities are built upon its design.
 
+[![Proton Mail](https://img.shields.io/badge/ProtonMail-8B89CC?style=for-the-badge&logo=protonmail&logoColor=white)](mailto:fiery.furry@proton.me)
 
 ## Roadmap:
 
