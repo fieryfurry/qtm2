@@ -9,7 +9,7 @@ QTM2 is a cross-platform application that aims to integrate creating and uploadi
 
 ![screenshot](screenshot.png)
 
-This is a project that is undergoing active development, so bugs are possible. Please report any [here](#TODO) with detailed descriptions of your system configuration and steps to reproduce the bug. You may also suggest new features [here](#TODO) to be added to the roadmap section below. 
+This is a project that is undergoing active development, so bugs are possible. Please report any in the [Issues](https://github.com/fieryfurry/qtm2/issues) section with detailed descriptions of your system configuration and steps to reproduce the bug. You may also suggest new features there to be added to the roadmap section below. 
 
 Please observe and follow all GT [site rules](https://www.gaytor.rent/rules.php) and refer to the [FAQs](https://www.gaytor.rent/faq.php) and [help desk](https://www.gaytor.rent/helpdesk.php) for other queries/issues. Please act responsibly and respect other members of the community.
 
@@ -23,6 +23,7 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [x] Top/bottom UI panels
 - [x] TOML configuration file (de)serialisation
 - [x] Tracing
+- [x] CI testing/package generation
 
 ### Priority:
 - [ ] Networking
@@ -32,7 +33,6 @@ Please also note that the binary and its data structures are referred to as `qtm
 
 ### Future:
 - [ ] install.sh shell
-- [ ] CI testing/package generation
 - [ ] Image preview
 - [ ] Video thumbnail generator
 - [ ] CLI support
@@ -40,27 +40,26 @@ Please also note that the binary and its data structures are referred to as `qtm
 
 
 ## Installation
-### Install dependencies (Linux ONLY)
+### Prebuilt binaries
+The latest binaries can be found in the [Releases](https://github.com/fieryfurry/qtm2/releases) section under the Assets sub-heading. 
+
+### Build from source
+#### Install dependencies (Linux ONLY)
 note: dependency installation _only_ tested on Ubuntu
-#### Debian/Ubuntu
+##### Debian/Ubuntu
 ```
 sudo apt-get install libatk1.0-0 libgtk-3-dev
 ```
-#### Arch Linux
+##### Arch Linux
 ```
 sudo pacman -S atk-git gtk3
 ```
-#### Fedora
+##### Fedora
 ```
 sudo dnf install atk gtk3-devel
 ```
-
-### Build from source
-1. Follow the instruction [here](https://www.rust-lang.org/tools/install) to install the Rust toolchain, including `cargo`.
+1. Follow the instruction on the official [Rust](https://www.rust-lang.org/tools/install) website to install the Rust toolchain, including `cargo`.
 2. Execute `cargo install --git https://github.com/fieryfurry/qtm2` in your terminal
-
-### Prebuilt binaries
-Upcoming...
 
 ## License
 QTM2 is licensed under the [BSD-2-Clause Plus Patent License](https://spdx.org/licenses/BSD-2-Clause-Patent.html). 
