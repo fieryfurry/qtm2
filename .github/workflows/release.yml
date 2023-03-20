@@ -1,5 +1,8 @@
 name: Release
 
+permissions:
+  contents: write
+
 on:
   release:
     types: [created]
@@ -20,13 +23,13 @@ jobs:
             archive: zip
     steps:
       - uses: actions/checkout@v3
-      - run: sudo apt-get install libatk1.0-0 libgtk-3-dev
-        if: ${{ matrix.target == 'x86_64-unknown-linux-musl'}}
+      - name: Install linux dependencies
+        run: sudo apt-get install libatk1.0-0 libgtk-3-dev
+        if: ${{ matrix.target == 'x86_64-unknown-linux-gnu'}}
       - name: Compile and release
-        uses: rust-build/rust-build.action@v1.4.3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: taiki-e/upload-rust-binary-action@v1
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-          EXTRA_FILES: "README.md LICENSE"
+          bin: qtm2,
+          token: ${{ secrets.GITHUB_TOKEN }},
+          target: ${{ matrix.target }},
+          include: README.md,LICENSE.md
