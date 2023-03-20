@@ -16,11 +16,8 @@ jobs:
       matrix:
         include:
           - target: x86_64-pc-windows-gnu
-            archive: zip
           - target: x86_64-unknown-linux-gnu
-            archive: tar.gz tar.xz tar.zst
           - target: x86_64-apple-darwin
-            archive: zip
     steps:
       - uses: actions/checkout@v3
       - name: Install linux dependencies
@@ -29,7 +26,7 @@ jobs:
       - name: Compile and release
         uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: qtm2,
-          token: ${{ secrets.GITHUB_TOKEN }},
-          target: ${{ matrix.target }},
+          bin: qtm2
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: ${{ matrix.target }}
           include: README.md,LICENSE.md
