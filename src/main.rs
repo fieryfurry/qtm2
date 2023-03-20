@@ -123,7 +123,6 @@ fn main() -> Result<()> {
 // TODO:
 //          Add password prompt
 //          Add CLI support
-//          Add UI customisation support
 //          Add networking/communication/authentication features
 //          Add Bencode encoding/decoding for torrent files [Bendy](https://crates.io/crates/bendy)
 //          Add uTorrent/qBittorrent integration
@@ -204,7 +203,23 @@ impl Qtm {
         }
     }
 
-    fn upload(&mut self) {
+    fn is_acceptable(&self) -> bool {
+        // TODO: Reject if the content's name contains illegal characters
+        if self.content.is_none() {
+            return false;
+        }
+        // rejects if there is no category, image, title or description
+        // TODO: Add check for description only whitespace or newline character
+        if self.categories[0] == Category::None || self.images.is_empty() || self.title.trim().is_empty() || self.description.trim().is_empty() {
+            return false;
+        }
+        true
+    }
+
+    fn generate_torrent(&mut self) {
+        // TODO: Reject if images contain duplicates
+
+
         todo!()
     }
 }
@@ -254,11 +269,13 @@ impl eframe::App for Qtm {
             .exact_height(40.)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    ui.set_enabled(self.is_acceptable());
+
                     if ui
                         .add_sized(vec2(150., 20.), widgets::Button::new("Upload torrent"))
                         .clicked()
                     {
-                        self.upload();
+                        self.generate_torrent();
                     }
                 });
             });
