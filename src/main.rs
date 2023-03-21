@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -80,7 +81,7 @@ fn initialise_dirs() -> Result<()> {
     Ok(())
 }
 
-fn initialise_tracing() -> Result<()>{
+fn initialise_tracing() -> Result<()> {
     let file_appender = tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
     let subscriber = tracing_subscriber::fmt()
@@ -282,7 +283,7 @@ impl Qtm {
 }
 
 impl eframe::App for Qtm {
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         if let Some(receiver) = &self.dialog_msg_receiver {
             match receiver.try_recv() {
                 Ok(message) => self.dialog = Some(message),
@@ -300,6 +301,7 @@ impl eframe::App for Qtm {
         egui::TopBottomPanel::top("top_panel")
             .exact_height(25.)
             .show(ctx, |ui| {
+                // TODO: Add tooltips when hovered
                 ui.set_enabled(self.dialog.is_none());
                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                     if ui
@@ -350,19 +352,7 @@ impl eframe::App for Qtm {
                             tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
                         }
                         initialise_dirs().unwrap();
-                        // TODO: Currently logger stops working after cache cleared
-                        info!("Cleared all application configuration, log and cached torrents; reset application theme and default directory");
-
-                        self.config.theme = QtmTheme::Light;
-                        self.config.default_directory = None;
-                        ctx.set_style(get_style_by_theme(self.config.theme));
-
-                        self.dialog = Some(DialogMessage(
-                            Cow::Borrowed(
-                                "Cleared all application configuration, log and cached torrents\n\nReset application theme and default directory",
-                            ),
-                            true,
-                        ));
+                        frame.close();
                     }
                 });
             });
@@ -457,8 +447,6 @@ impl eframe::App for Qtm {
                         ui.end_row();
 
                         // Categories
-                        // TODO: Add all categories
-
                         for number in 0..5 {
                             ui.label(if number == 0 {
                                 "Category:".to_owned()
