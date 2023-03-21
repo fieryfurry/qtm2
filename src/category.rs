@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BSD-2-Clause-Patent
+
 use std::fmt::{Display, Formatter};
 use strum_macros::EnumIter;
 

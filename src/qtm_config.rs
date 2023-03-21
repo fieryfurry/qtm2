@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
 use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
 use std::fs;
 use std::ops::Neg;
 use std::path::{Path, PathBuf};
@@ -78,12 +79,18 @@ impl Neg for QtmTheme {
 pub(crate) struct QtmVersion(u8, u8, u8);
 
 impl QtmVersion {
-    fn get_current_version() -> Self {
+    pub(crate) fn get_current_version() -> Self {
         Self(
             env!("CARGO_PKG_VERSION_PATCH").parse::<u8>().unwrap(),
             env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap(),
             env!("CARGO_PKG_VERSION_MAJOR").parse::<u8>().unwrap(),
         )
+    }
+}
+
+impl Display for QtmVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.0, self.1, self.2)
     }
 }
 

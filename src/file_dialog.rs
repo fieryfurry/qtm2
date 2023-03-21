@@ -24,17 +24,21 @@ trait Pred {
 
 impl Pred for FileDialog {}
 
-fn create_file_dialog(default_directory: Option<&Path>) -> FileDialog {
+fn create_file_dialog<P: AsRef<Path> + Clone>(default_directory: Option<P>) -> FileDialog {
     FileDialog::new().pred(
-        |_| default_directory.is_some() && default_directory.unwrap().exists() && default_directory.unwrap().is_dir(),
-        |dir| dir.set_directory(default_directory.unwrap()),
+        |_| {
+            default_directory.is_some()
+                && default_directory.clone().unwrap().as_ref().exists()
+                && default_directory.clone().unwrap().as_ref().is_dir()
+        },
+        |dir| dir.set_directory(default_directory.clone().unwrap()),
         |dir| dir,
     )
 }
 
-pub(crate) fn select_content(
+pub(crate) fn select_content<P: AsRef<Path> + Clone>(
     is_file: bool,
-    default_directory: Option<&Path>,
+    default_directory: Option<P>,
 ) -> Option<(PathBuf, String, u64)> {
     create_file_dialog(default_directory)
         .pred(|_| is_file, FileDialog::pick_file, FileDialog::pick_folder)
@@ -48,9 +52,12 @@ pub(crate) fn select_content(
 }
 
 // TODO: Add all supported file extensions
-pub(crate) fn select_image(default_directory: Option<&Path>) -> Option<Image> {
+pub(crate) fn select_image<P: AsRef<Path> + Clone>(default_directory: Option<P>) -> Option<Image> {
     create_file_dialog(default_directory)
-        .add_filter("image", &["png", "PNG", "jpg", "JPG", "jpeg", "JPEG", "gif", "GIF"])
+        .add_filter(
+            "image",
+            &["png", "PNG", "jpg", "JPG", "jpeg", "JPEG", "gif", "GIF"],
+        )
         .pick_file()
         .map(|f| Image {
             path: f.clone(),

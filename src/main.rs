@@ -5,29 +5,33 @@ use std::fmt::Debug;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
+use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
 
 use anyhow::Result;
 use bytesize::ByteSize;
 use directories::ProjectDirs;
 use eframe::egui;
+use eframe::egui::TextStyle::*;
 use eframe::egui::{
-    Align, Color32, Context, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea, Style,
-    vec2, Visuals, widgets,
+    vec2, widgets, Align, Color32, Context, FontData, FontDefinitions, FontId, Grid, Id, Layout,
+    ScrollArea, Style, Visuals,
 };
 use eframe::egui::{FontFamily, Frame, Margin, Rounding};
-use eframe::egui::TextStyle::*;
 use strum::IntoEnumIterator;
-use tracing::{info, Level, warn};
+use tracing::{info, warn, Level};
 
 use crate::category::Category;
 use crate::file_dialog::select_content;
 use crate::qtm_config::{QtmConfig, QtmTheme};
 use crate::selectable_table::{Column, TableBuilder};
+use crate::torrent::create_torrent_file;
 
 mod category;
 mod file_dialog;
 mod qtm_config;
 mod selectable_table;
+mod torrent;
 mod unwrap_trace;
 
 fn proj_dirs() -> Result<ProjectDirs> {
@@ -45,6 +49,10 @@ fn config_dir(filename: &str) -> PathBuf {
 
 fn data_local_dir(filename: &str) -> PathBuf {
     proj_dirs().unwrap().data_local_dir().join(filename)
+}
+
+fn cache_dir(filename: &str) -> PathBuf {
+    proj_dirs().unwrap().cache_dir().join(filename)
 }
 
 fn get_style_by_theme(theme: QtmTheme) -> Style {
@@ -92,6 +100,12 @@ fn main() -> Result<()> {
             return Err(anyhow::Error::from(err));
         }
     }
+    if !proj_dirs.cache_dir().exists() {
+        if let Err(err) = fs::create_dir_all(proj_dirs.cache_dir()) {
+            warn!(?err, "Unable to create data folder; exiting");
+            return Err(anyhow::Error::from(err));
+        }
+    }
 
     // Tracing init
     let file_appender = tracing_appender::rolling::daily(proj_dirs.data_local_dir(), "qtm2.log");
@@ -129,22 +143,6 @@ fn main() -> Result<()> {
 //          Add Bencode encoding/decoding for torrent files [Bendy](https://crates.io/crates/bendy)
 //          Add uTorrent/qBittorrent integration
 
-struct Qtm {
-    config: QtmConfig,
-    dialog: (bool, Cow<'static, str>),
-
-    is_file: bool,
-    content: Option<(PathBuf, String, u64)>,
-
-    categories: [Category; 5],
-
-    images: Vec<Image>,
-    selected_index: Option<usize>,
-
-    title: String,
-    description: String,
-}
-
 #[derive(Debug, Clone)]
 pub(crate) struct Image {
     path: PathBuf,
@@ -159,6 +157,27 @@ impl PartialEq for Image {
 }
 
 impl Eq for Image {}
+
+// is_open, text, is_ok_showing
+#[derive(Debug)]
+struct DialogMessage(Cow<'static, str>, bool);
+
+pub(crate) struct Qtm {
+    config: QtmConfig,
+    dialog: Option<DialogMessage>,
+    dialog_msg_receiver: Option<mpsc::Receiver<DialogMessage>>,
+
+    is_file: bool,
+    content: Option<(PathBuf, String, u64)>,
+
+    categories: [Category; 5],
+
+    images: Vec<Image>,
+    selected_index: Option<usize>,
+
+    title: String,
+    description: String,
+}
 
 impl Qtm {
     fn new(cc: &eframe::CreationContext<'_>, config: QtmConfig) -> Self {
@@ -196,7 +215,8 @@ impl Qtm {
 
         Self {
             config,
-            dialog: (false, Cow::Borrowed("")),
+            dialog: None,
+            dialog_msg_receiver: None,
             is_file: true,
             content: None,
             categories: [Category::None; 5],
@@ -207,7 +227,7 @@ impl Qtm {
         }
     }
 
-    fn show_dialog_window(&mut self, context: &Context, message: &str) {
+    fn show_dialog_window(&mut self, context: &Context, message: &str, is_ok_showing: bool) {
         egui::Window::new("message")
             .fixed_size(vec2(400., 300.))
             .title_bar(false)
@@ -221,11 +241,12 @@ impl Qtm {
                     ui.label(message);
                     ui.add_space(50.);
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if ui
-                            .add_sized(vec2(200., 25.), widgets::Button::new("OK"))
-                            .clicked()
+                        if is_ok_showing
+                            && ui
+                                .add_sized(vec2(200., 25.), widgets::Button::new("OK"))
+                                .clicked()
                         {
-                            self.dialog = (false, Cow::Borrowed(""));
+                            self.dialog = None;
                         }
                     });
                 })
@@ -248,22 +269,28 @@ impl Qtm {
         }
         true
     }
-
-    fn generate_torrent(&mut self) {
-        todo!()
-    }
 }
 
 impl eframe::App for Qtm {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
-        if self.dialog.0 {
-            let message = self.dialog.1.to_string();
-            self.show_dialog_window(ctx, &message);
+        if let Some(receiver) = &self.dialog_msg_receiver {
+            match receiver.try_recv() {
+                Ok(message) => self.dialog = Some(message),
+                Err(err) => match err {
+                    TryRecvError::Empty => {}
+                    TryRecvError::Disconnected => self.dialog_msg_receiver = None,
+                },
+            }
+        }
+
+        if let Some(DialogMessage(message, is_ok_showing)) = &self.dialog {
+            self.show_dialog_window(ctx, &message.clone(), *is_ok_showing);
         }
 
         egui::TopBottomPanel::top("top_panel")
             .exact_height(25.)
             .show(ctx, |ui| {
+                ui.set_enabled(self.dialog.is_none());
                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                     if ui
                         .add_sized(
@@ -305,13 +332,24 @@ impl eframe::App for Qtm {
             .exact_height(40.)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.set_enabled(self.is_acceptable());
-
+                    ui.set_enabled(self.dialog.is_none() && self.is_acceptable());
                     if ui
                         .add_sized(vec2(150., 20.), widgets::Button::new("Upload torrent"))
                         .clicked()
                     {
-                        self.generate_torrent();
+                        info!("Begin torrent upload");
+                        self.dialog = Some(DialogMessage(
+                            Cow::Borrowed("Creating torrent...\n\nThis may take a while..."),
+                            false,
+                        ));
+
+                        let content_path = self.content.clone().unwrap().0;
+                        let (tx, rx) = mpsc::channel();
+                        self.dialog_msg_receiver = Some(rx);
+
+                        std::thread::spawn(|| {
+                            create_torrent_file(content_path, tx);
+                        });
                     }
                 });
             });
@@ -319,6 +357,7 @@ impl eframe::App for Qtm {
         egui::CentralPanel::default()
             .frame(Frame::window(&ctx.style()))
             .show(ctx, |ui| {
+                ui.set_enabled(self.dialog.is_none());
                 // Content type
                 ui.horizontal(|ui| {
                     if ui
@@ -442,7 +481,8 @@ impl eframe::App for Qtm {
                                             if !self.images.contains(&image) {
                                                 self.images.push(image);
                                             } else {
-                                                self.dialog = (true, Cow::Owned(format!("Duplicate image: \n\n{}", image.filename)));
+                                                warn!(?image.path, "Duplicate image");
+                                                self.dialog = Some(DialogMessage(Cow::Owned(format!("Duplicate image: \n\n{}", image.filename)), true));
                                             }
                                         }
                                     }
