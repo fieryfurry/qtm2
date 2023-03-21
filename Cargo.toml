@@ -14,7 +14,6 @@ repository = "https://github.com/fieryfurry/qtm2"
 
 [dependencies]
 anyhow = "1.0"
-bendy = "0.3"
 bytesize = "1.2"
 directories = "5.0"
 eframe = "0.21"

@@ -91,10 +91,14 @@ pub(crate) fn create_torrent_file<P: AsRef<Path>>(
             info!("{filename} has been created successfully");
             match torrent.write_into_file(cache_dir(filename)) {
                 Ok(_) => {
-                    sender.send(DialogMessage(
-                        Cow::Borrowed("Torrent has been written to disk successfully\n\nUploading..."),
-                        true, // TODO: Add uploading & turn this to false
-                    )).unwrap();
+                    sender
+                        .send(DialogMessage(
+                            Cow::Borrowed(
+                                "Torrent has been written to disk successfully\n\nUploading...",
+                            ),
+                            true, // TODO: Add uploading & turn this to false
+                        ))
+                        .unwrap();
                     info!("{filename} has been written to disk successfully");
                 }
                 Err(err) => {
