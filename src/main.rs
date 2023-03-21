@@ -4,27 +4,27 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 use std::fs;
 use std::io::{Error, ErrorKind};
-use std::ops::Deref;
 use std::path::PathBuf;
 
 use anyhow::Result;
 use bytesize::ByteSize;
 use directories::ProjectDirs;
 use eframe::egui;
-use eframe::egui::TextStyle::*;
 use eframe::egui::{
-    vec2, widgets, Align, Color32, Context, FontData, FontDefinitions, FontId, Grid, Id, Layout,
-    ScrollArea, Style, Visuals,
+    Align, Color32, Context, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea, Style,
+    vec2, Visuals, widgets,
 };
 use eframe::egui::{FontFamily, Frame, Margin, Rounding};
+use eframe::egui::TextStyle::*;
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter};
-use tracing::{info, warn, Level};
+use tracing::{info, Level, warn};
 
+use crate::category::Category;
 use crate::file_dialog::select_content;
 use crate::qtm_config::{QtmConfig, QtmTheme};
 use crate::selectable_table::{Column, TableBuilder};
 
+mod category;
 mod file_dialog;
 mod qtm_config;
 mod selectable_table;
@@ -143,14 +143,6 @@ struct Qtm {
 
     title: String,
     description: String,
-}
-
-#[derive(EnumIter, Display, Debug, Copy, Clone, Eq, PartialEq)]
-enum Category {
-    None,
-    Amateur,
-    Clips,
-    Images,
 }
 
 #[derive(Debug, Clone)]
@@ -457,17 +449,17 @@ impl eframe::App for Qtm {
                                 });
                             });
                             if let Some(selected_index) = self.selected_index {
-                                ui.with_layout(Layout::top_down(Align::Max), |ui| {
+                                ui.with_layout(Layout::top_down(Align::Center), |ui| {
                                     ui.add_space(10.);
-                                    if ui.add(egui::Button::new("up").min_size(vec2(30., 10.))).clicked() && selected_index != 0 {
+                                    if ui.add(egui::Button::new("↑").min_size(vec2(50., 10.))).clicked() && selected_index != 0 {
                                         self.images.swap(selected_index, selected_index - 1);
                                         self.selected_index = Some(selected_index - 1);
                                     }
-                                    if ui.add(egui::Button::new("down").min_size(vec2(30., 10.))).clicked() && selected_index != self.images.len() - 1 {
+                                    if ui.add(egui::Button::new("↓").min_size(vec2(50., 10.))).clicked() && selected_index != self.images.len() - 1 {
                                         self.images.swap(selected_index, selected_index + 1);
                                         self.selected_index = Some(selected_index + 1);
                                     }
-                                    if ui.add(egui::Button::new("delete").min_size(vec2(30., 10.))).clicked() {
+                                    if ui.add(egui::Button::new("✗").min_size(vec2(50., 10.))).clicked() {
                                         self.images.remove(selected_index);
                                         self.selected_index = None;
                                         ui.data_mut(|d| d.insert_persisted::<Option<usize>>(Id::new("selected_index"), None));
