@@ -55,6 +55,42 @@ fn cache_dir(filename: &str) -> PathBuf {
     proj_dirs().unwrap().cache_dir().join(filename)
 }
 
+fn initialise_dirs() -> Result<()> {
+    // Project directory
+    let proj_dirs = proj_dirs()?;
+    // Create folders if they do not exist
+    if !proj_dirs.config_dir().exists() {
+        if let Err(err) = fs::create_dir_all(proj_dirs.config_dir()) {
+            warn!(?err, "Unable to create configuration folder; exiting");
+            return Err(anyhow::Error::new(err));
+        }
+    }
+    if !proj_dirs.data_local_dir().exists() {
+        if let Err(err) = fs::create_dir_all(proj_dirs.data_local_dir()) {
+            warn!(?err, "Unable to create data folder; exiting");
+            return Err(anyhow::Error::new(err));
+        }
+    }
+    if !proj_dirs.cache_dir().exists() {
+        if let Err(err) = fs::create_dir_all(proj_dirs.cache_dir()) {
+            warn!(?err, "Unable to create data folder; exiting");
+            return Err(anyhow::Error::new(err));
+        }
+    }
+    Ok(())
+}
+
+fn initialise_tracing() -> Result<()>{
+    let file_appender = tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_max_level(Level::INFO)
+        .with_ansi(false)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).map_err(anyhow::Error::new)
+}
+
 fn get_style_by_theme(theme: QtmTheme) -> Style {
     let mut style = Style {
         text_styles: [
@@ -85,37 +121,11 @@ fn get_style_by_theme(theme: QtmTheme) -> Style {
 }
 
 fn main() -> Result<()> {
-    // Project directory
-    let proj_dirs = proj_dirs()?;
-    // Create folders if they do not exist
-    if !proj_dirs.config_dir().exists() {
-        if let Err(err) = fs::create_dir_all(proj_dirs.config_dir()) {
-            warn!(?err, "Unable to create configuration folder; exiting");
-            return Err(anyhow::Error::from(err));
-        }
-    }
-    if !proj_dirs.data_local_dir().exists() {
-        if let Err(err) = fs::create_dir_all(proj_dirs.data_local_dir()) {
-            warn!(?err, "Unable to create data folder; exiting");
-            return Err(anyhow::Error::from(err));
-        }
-    }
-    if !proj_dirs.cache_dir().exists() {
-        if let Err(err) = fs::create_dir_all(proj_dirs.cache_dir()) {
-            warn!(?err, "Unable to create data folder; exiting");
-            return Err(anyhow::Error::from(err));
-        }
-    }
+    // Initialise directories
+    initialise_dirs()?;
 
     // Tracing init
-    let file_appender = tracing_appender::rolling::daily(proj_dirs.data_local_dir(), "qtm2.log");
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-    let subscriber = tracing_subscriber::fmt()
-        .with_writer(non_blocking)
-        .with_max_level(Level::INFO)
-        .with_ansi(false)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber)?;
+    initialise_tracing()?;
 
     info!("Started application");
 
@@ -228,7 +238,7 @@ impl Qtm {
     }
 
     fn show_dialog_window(&mut self, context: &Context, message: &str, is_ok_showing: bool) {
-        egui::Window::new("message")
+        egui::Window::new("dialog")
             .fixed_size(vec2(400., 300.))
             .title_bar(false)
             .frame(Frame::window(&context.style()).rounding(Rounding::same(10.)))
@@ -324,6 +334,35 @@ impl eframe::App for Qtm {
                             self.config.default_directory = Some(path);
                             self.config.save(config_dir("config.toml"));
                         }
+                    }
+                    ui.add_space(100.);
+                    if ui
+                        .add_sized(
+                            vec2(ui.available_height(), ui.available_height()),
+                            widgets::Button::new("⚠"),
+                        )
+                        .clicked()
+                    {
+                        for dir in [cache_dir(""), config_dir(""), data_local_dir("")] {
+                            fs::remove_dir_all(dir).unwrap();
+                        }
+                        {
+                            tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
+                        }
+                        initialise_dirs().unwrap();
+                        // TODO: Currently logger stops working after cache cleared
+                        info!("Cleared all application configuration, log and cached torrents; reset application theme and default directory");
+
+                        self.config.theme = QtmTheme::Light;
+                        self.config.default_directory = None;
+                        ctx.set_style(get_style_by_theme(self.config.theme));
+
+                        self.dialog = Some(DialogMessage(
+                            Cow::Borrowed(
+                                "Cleared all application configuration, log and cached torrents\n\nReset application theme and default directory",
+                            ),
+                            true,
+                        ));
                     }
                 });
             });
