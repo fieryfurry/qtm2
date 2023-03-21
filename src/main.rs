@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::fs;
 use std::io::{Error, ErrorKind};
+use std::ops::Deref;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -11,8 +13,8 @@ use directories::ProjectDirs;
 use eframe::egui;
 use eframe::egui::TextStyle::*;
 use eframe::egui::{
-    vec2, widgets, Align, Color32, FontData, FontDefinitions, FontId, Grid, Id, Layout, ScrollArea,
-    Style, Visuals,
+    vec2, widgets, Align, Color32, Context, FontData, FontDefinitions, FontId, Grid, Id, Layout,
+    ScrollArea, Style, Visuals,
 };
 use eframe::egui::{FontFamily, Frame, Margin, Rounding};
 use strum::IntoEnumIterator;
@@ -129,6 +131,7 @@ fn main() -> Result<()> {
 
 struct Qtm {
     config: QtmConfig,
+    dialog: (bool, Cow<'static, str>),
 
     is_file: bool,
     content: Option<(PathBuf, String, u64)>,
@@ -156,6 +159,14 @@ pub(crate) struct Image {
     filename: String,
     size: u64,
 }
+
+impl PartialEq for Image {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
+impl Eq for Image {}
 
 impl Qtm {
     fn new(cc: &eframe::CreationContext<'_>, config: QtmConfig) -> Self {
@@ -193,6 +204,7 @@ impl Qtm {
 
         Self {
             config,
+            dialog: (false, Cow::Borrowed("")),
             is_file: true,
             content: None,
             categories: [Category::None; 5],
@@ -203,6 +215,31 @@ impl Qtm {
         }
     }
 
+    fn show_dialog_window(&mut self, context: &Context, message: &str) {
+        egui::Window::new("message")
+            .fixed_size(vec2(400., 300.))
+            .title_bar(false)
+            .frame(Frame::window(&context.style()).rounding(Rounding::same(10.)))
+            .show(context, |ui| {
+                ui.with_layout(Layout::top_down(Align::Min), |ui| {
+                    // ui.add_sized(
+                    //     vec2(ui.available_width(), ui.available_height() - 50.),
+                    //     widgets::Label::new(message),
+                    // );
+                    ui.label(message);
+                    ui.add_space(50.);
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if ui
+                            .add_sized(vec2(200., 25.), widgets::Button::new("OK"))
+                            .clicked()
+                        {
+                            self.dialog = (false, Cow::Borrowed(""));
+                        }
+                    });
+                })
+            });
+    }
+
     fn is_acceptable(&self) -> bool {
         // TODO: Reject if the content's name contains illegal characters
         if self.content.is_none() {
@@ -210,22 +247,28 @@ impl Qtm {
         }
         // rejects if there is no category, image, title or description
         // TODO: Add check for description only whitespace or newline character
-        if self.categories[0] == Category::None || self.images.is_empty() || self.title.trim().is_empty() || self.description.trim().is_empty() {
+        if self.categories[0] == Category::None
+            || self.images.is_empty()
+            || self.title.trim().is_empty()
+            || self.description.trim().is_empty()
+        {
             return false;
         }
         true
     }
 
     fn generate_torrent(&mut self) {
-        // TODO: Reject if images contain duplicates
-
-
         todo!()
     }
 }
 
 impl eframe::App for Qtm {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        if self.dialog.0 {
+            let message = self.dialog.1.to_string();
+            self.show_dialog_window(ctx, &message);
+        }
+
         egui::TopBottomPanel::top("top_panel")
             .exact_height(25.)
             .show(ctx, |ui| {
@@ -242,8 +285,7 @@ impl eframe::App for Qtm {
                         .clicked()
                     {
                         self.config.theme = -self.config.theme;
-                        self.config
-                            .save(config_dir("config.toml"));
+                        self.config.save(config_dir("config.toml"));
 
                         ctx.set_style(get_style_by_theme(self.config.theme));
                         info!("Theme changed to {}", self.config.theme);
@@ -256,7 +298,9 @@ impl eframe::App for Qtm {
                         )
                         .clicked()
                     {
-                        if let Some((path, _, _)) = select_content(false, self.config.default_directory.as_deref()) {
+                        if let Some((path, _, _)) =
+                            select_content(false, self.config.default_directory.as_deref())
+                        {
                             info!("Default directory changed to {}", path.to_string_lossy());
                             self.config.default_directory = Some(path);
                             self.config.save(config_dir("config.toml"));
@@ -403,7 +447,11 @@ impl eframe::App for Qtm {
                                         if let Some(image) = file_dialog::select_image(
                                             self.config.default_directory.as_deref(),
                                         ) {
-                                            self.images.push(image);
+                                            if !self.images.contains(&image) {
+                                                self.images.push(image);
+                                            } else {
+                                                self.dialog = (true, Cow::Owned(format!("Duplicate image: \n\n{}", image.filename)));
+                                            }
                                         }
                                     }
                                 });
