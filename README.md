@@ -24,19 +24,19 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [x] TOML configuration file (de)serialisation
 - [x] Tracing
 - [x] CI testing/package generation
+- [x] Torrent file (de)serialisation
+- [x] Image preview
+- [x] UI Customisation
 
 ### Priority:
 - [ ] Networking
 - [ ] Password prompt
-- [ ] Torrent file (de)serialisation
 - [ ] uTorrent/qBittorrent integration
 
 ### Future:
-- [ ] install.sh shell
-- [ ] Image preview
+- [ ] install.sh shell script
 - [ ] Video thumbnail generator
 - [ ] CLI support
-- [ ] UI Customisation
 
 
 ## Installation
