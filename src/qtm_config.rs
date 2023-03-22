@@ -85,9 +85,9 @@ pub(crate) struct QtmVersion(u8, u8, u8);
 impl QtmVersion {
     pub(crate) fn get_current_version() -> Self {
         Self(
-            env!("CARGO_PKG_VERSION_PATCH").parse::<u8>().unwrap(),
-            env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap(),
             env!("CARGO_PKG_VERSION_MAJOR").parse::<u8>().unwrap(),
+            env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap(),
+            env!("CARGO_PKG_VERSION_PATCH").parse::<u8>().unwrap(),
         )
     }
 }

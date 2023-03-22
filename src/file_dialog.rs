@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use eframe::egui::{ColorImage, TextureHandle, Ui};
+use eframe::egui::{ColorImage, TextureHandle, TextureOptions, Ui};
 use rfd::FileDialog;
 use tracing::warn;
 
@@ -84,5 +84,5 @@ fn create_image_texture_handle<P: AsRef<Path>>(image_path: P, ui: &mut Ui) -> an
     let pixels = image_buffer.as_flat_samples();
 
     let colour_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-    Ok(ui.ctx().load_texture(image_path.as_ref().to_string_lossy(), colour_image, Default::default()))
+    Ok(ui.ctx().load_texture(image_path.as_ref().to_string_lossy(), colour_image, TextureOptions::LINEAR))
 }
