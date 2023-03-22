@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
 use std::cmp::Ordering;
-use std::fmt::{Display, Formatter};
+use std::fmt::Formatter;
 use std::fs;
 use std::ops::Neg;
 use std::path::{Path, PathBuf};
@@ -88,7 +88,7 @@ impl QtmVersion {
     }
 }
 
-impl Display for QtmVersion {
+impl std::fmt::Display for QtmVersion {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.{}.{}", self.0, self.1, self.2)
     }

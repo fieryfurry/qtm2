@@ -245,10 +245,6 @@ impl Qtm {
             .frame(Frame::window(&context.style()).rounding(Rounding::same(10.)))
             .show(context, |ui| {
                 ui.with_layout(Layout::top_down(Align::Min), |ui| {
-                    // ui.add_sized(
-                    //     vec2(ui.available_width(), ui.available_height() - 50.),
-                    //     widgets::Label::new(message),
-                    // );
                     ui.label(message);
                     ui.add_space(50.);
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -301,7 +297,6 @@ impl eframe::App for Qtm {
         egui::TopBottomPanel::top("top_panel")
             .exact_height(25.)
             .show(ctx, |ui| {
-                // TODO: Add tooltips when hovered
                 ui.set_enabled(self.dialog.is_none());
                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                     if ui
@@ -313,6 +308,7 @@ impl eframe::App for Qtm {
                                 "☀"
                             }),
                         )
+                        .on_hover_text("Toggle light/dark theme")
                         .clicked()
                     {
                         self.config.theme = -self.config.theme;
@@ -327,6 +323,7 @@ impl eframe::App for Qtm {
                             vec2(ui.available_height(), ui.available_height()),
                             widgets::Button::new("☆"),
                         )
+                        .on_hover_text("Change default directory")
                         .clicked()
                     {
                         if let Some((path, _, _)) =
@@ -337,12 +334,13 @@ impl eframe::App for Qtm {
                             self.config.save(config_dir("config.toml"));
                         }
                     }
-                    ui.add_space(100.);
+                    ui.add_space(110.);
                     if ui
                         .add_sized(
                             vec2(ui.available_height(), ui.available_height()),
                             widgets::Button::new("⚠"),
                         )
+                        .on_hover_text("CAUTION: clear all cache")
                         .clicked()
                     {
                         for dir in [cache_dir(""), config_dir(""), data_local_dir("")] {
@@ -535,7 +533,7 @@ impl eframe::App for Qtm {
                             }
                         });
 
-                        let (rect, _) = ui.allocate_exact_size(vec2(ui.available_size_before_wrap().x, 150.), selectable_table::SENSE_NONE);
+                        let (rect, _) = ui.allocate_exact_size(vec2(ui.available_size_before_wrap().x, 180.), selectable_table::SENSE_NONE);
                         {
                             let ui = &mut ui.child_ui(rect, *ui.layout());
                             let table = TableBuilder::new(ui)
@@ -609,6 +607,14 @@ impl eframe::App for Qtm {
                                 });
                         });
                     });
+                ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                    ui.add_space(5.);
+                   if ui.hyperlink_to("Uploading Rules","https://www.gaytor.rent/rules.php#102").clicked() {
+                        if let Err(err) = open::that("https://www.gaytor.rent/rules.php#102") {
+                            warn!(?err, "Failed to open uploading rules link: https://www.gaytor.rent/rules.php#102");
+                        }
+                   }
+                });
             });
     }
 }
