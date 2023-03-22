@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
+use std::cell::Cell;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use eframe::egui;
-use eframe::egui::{vec2, widgets, Align, Context, Direction, Frame, Layout};
+use eframe::egui::{vec2, widgets, Context, Frame};
 use tracing::info;
 
 use crate::qtm_config::QtmTheme;
@@ -14,6 +16,7 @@ pub(crate) struct PasswordPrompt {
     pub(crate) cache_path: PathBuf,
     pub(crate) username: String,
     pub(crate) password: String,
+    pub(crate) is_authenticated: Rc<Cell<bool>>,
 }
 
 impl PasswordPrompt {
@@ -21,11 +24,13 @@ impl PasswordPrompt {
         cc: &eframe::CreationContext<'_>,
         theme: QtmTheme,
         cache_path: PathBuf,
+        is_authenticated: Rc<Cell<bool>>,
     ) -> Self {
         info!("Started Password Prompt");
         set_context(cc, theme);
         Self {
             cache_path,
+            is_authenticated,
             username: String::new(),
             password: String::new(),
         }
@@ -37,10 +42,16 @@ impl PasswordPrompt {
             && !self.password.is_empty()
             && self.password.is_ascii()
     }
+
+    fn authenticate(&self) -> bool {
+        // TODO: Authenticate and store cookie in `cache_path`
+        self.is_authenticated.set(true);
+        true
+    }
 }
 
 impl eframe::App for PasswordPrompt {
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         egui::CentralPanel::default()
             .frame(Frame::window(&ctx.style()))
             .show(ctx, |ui| {
@@ -65,7 +76,16 @@ impl eframe::App for PasswordPrompt {
                     });
                     ui.add_space(10.);
                     ui.set_enabled(self.is_valid());
-                    ui.add_sized(vec2(200., 40.), widgets::Button::new("LOG IN"));
+                    if ui
+                        .add_sized(vec2(200., 40.), widgets::Button::new("LOG IN"))
+                        .clicked()
+                    {
+                        info!("Attempt to log in");
+                        // TODO: authenticate username/password
+                        if self.authenticate() {
+                            frame.close();
+                        }
+                    }
                 });
             });
     }

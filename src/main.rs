@@ -2,10 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::fmt::Debug;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use anyhow::Result;
 use directories::ProjectDirs;
@@ -163,24 +165,35 @@ fn main() -> Result<()> {
     // Tracing init
     initialise_tracing()?;
 
-    info!("Started application");
+    info!("Started tracing");
 
     // Config init
     let config = QtmConfig::load(config_dir("config.toml"));
+    let is_authenticated = Rc::new(Cell::new(false));
+    let is_authenticated_clone = is_authenticated.clone();
 
     info!("Loaded configuration");
 
     // Egui init
     eframe::run_native(
-        &format!("Quick Torrent Maker 2 v{}", QtmVersion::get_current_version()),
+        &format!(
+            "Quick Torrent Maker 2 v{}",
+            QtmVersion::get_current_version()
+        ),
         eframe::NativeOptions {
             initial_window_pos: Some(Pos2::new(400., 400.)),
             initial_window_size: Some(vec2(400., 150.)),
-            always_on_top: true,
             resizable: false,
             ..Default::default()
         },
-        Box::new(move |cc| Box::new(PasswordPrompt::new(cc, config.theme, config_dir("")))),
+        Box::new(move |cc| {
+            Box::new(PasswordPrompt::new(
+                cc,
+                config.theme,
+                config_dir(""),
+                is_authenticated_clone,
+            ))
+        }),
     )
     .map_err(|err| {
         error!(
@@ -190,8 +203,16 @@ fn main() -> Result<()> {
         anyhow::Error::msg(err.to_string())
     })?;
 
+    if !is_authenticated.get() {
+        info!("Not authenticated; exiting");
+        return Ok(());
+    }
+
     eframe::run_native(
-        &format!("Quick Torrent Maker 2 v{}", QtmVersion::get_current_version()),
+        &format!(
+            "Quick Torrent Maker 2 v{}",
+            QtmVersion::get_current_version()
+        ),
         eframe::NativeOptions {
             initial_window_size: Some(vec2(
                 config.initial_window_size.0 as f32,
@@ -199,7 +220,7 @@ fn main() -> Result<()> {
             )),
             ..Default::default()
         },
-        Box::new(move |cc| Box::new(Qtm::new(cc, config))),
+        Box::new(|cc| Box::new(Qtm::new(cc, config))),
     )
     .map_err(|err| {
         error!(?err, "QTM2 failed to set up a graphics context");
