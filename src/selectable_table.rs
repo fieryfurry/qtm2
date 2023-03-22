@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
-use eframe::egui::{Align, Id, Layout, Rect, ScrollArea, Sense, Ui, vec2};
+use eframe::egui::{vec2, Align, Id, Layout, Rect, Response, ScrollArea, Sense, Ui};
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub enum ColumnWidthType {
@@ -134,10 +134,10 @@ impl TableBuilder {
                 .collect(),
             self.ui.available_rect_before_wrap().width()
                 - if remainder_count == 0 {
-                remaining_width
-            } else {
-                0.
-            },
+                    remaining_width
+                } else {
+                    0.
+                },
         )
     }
 
@@ -211,8 +211,8 @@ impl Table {
     /// Return the index of the row being selected (if any)
     /// determined by `add_body_contents`
     pub fn body<F>(mut self, add_body_contents: F) -> Option<usize>
-        where
-            F: for<'b> FnOnce(TableBody<'b>) -> Option<usize>,
+    where
+        F: for<'b> FnOnce(TableBody<'b>) -> Option<usize>,
     {
         let selected_row = self.ui.data_mut(|d| *d.get_persisted_mut_or(self.id, None));
         let mut new_selected_row = selected_row;
@@ -257,18 +257,15 @@ impl<'a> TableBody<'a> {
         self.ui
     }
 
-    pub fn row(&mut self, height: f32, add_row_content: impl FnOnce(TableRow)) -> bool {
-        let clicked = self
-            .ui
-            .interact(
-                Rect::from_min_size(
-                    self.ui.next_widget_position(),
-                    vec2(self.total_width, height),
-                ),
-                self.ui.id().with(self.row_no),
-                Sense::click(),
-            )
-            .clicked();
+    pub fn row(&mut self, height: f32, add_row_content: impl FnOnce(TableRow)) -> Response {
+        let clicked = self.ui.interact(
+            Rect::from_min_size(
+                self.ui.next_widget_position(),
+                vec2(self.total_width, height),
+            ),
+            self.ui.id().with(self.row_no),
+            Sense::click(),
+        );
         self.ui.allocate_ui_with_layout(
             vec2(self.total_width, height),
             Layout::left_to_right(Align::Center),

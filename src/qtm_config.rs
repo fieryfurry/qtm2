@@ -17,6 +17,8 @@ pub(crate) struct QtmConfig {
     pub(crate) version: QtmVersion,
     pub(crate) theme: QtmTheme,
     pub(crate) default_directory: Option<PathBuf>,
+    pub(crate) initial_window_size: (usize, usize),
+    pub(crate) image_area: usize,
 }
 
 impl Default for QtmConfig {
@@ -25,6 +27,8 @@ impl Default for QtmConfig {
             version: QtmVersion::get_current_version(),
             theme: QtmTheme::Light,
             default_directory: None,
+            initial_window_size: (800, 800),
+            image_area: 120_000,
         }
     }
 }

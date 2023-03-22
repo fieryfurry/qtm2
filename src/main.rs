@@ -15,8 +15,8 @@ use directories::ProjectDirs;
 use eframe::egui;
 use eframe::egui::TextStyle::*;
 use eframe::egui::{
-    vec2, widgets, Align, Color32, Context, FontData, FontDefinitions, FontId, Grid, Id, Layout,
-    ScrollArea, Style, Visuals,
+    show_tooltip, vec2, widgets, Align, Color32, Context, FontData, FontDefinitions, FontId, Grid,
+    Id, Layout, ScrollArea, Style, TextureHandle, Visuals,
 };
 use eframe::egui::{FontFamily, Frame, Margin, Rounding};
 use strum::IntoEnumIterator;
@@ -139,7 +139,7 @@ fn main() -> Result<()> {
     eframe::run_native(
         "Quick Torrent Maker 2",
         eframe::NativeOptions {
-            initial_window_size: Some(vec2(800., 800.)),
+            initial_window_size: Some(vec2(config.initial_window_size.0 as f32, config.initial_window_size.1 as f32)),
             ..Default::default()
         },
         Box::new(move |cc| Box::new(Qtm::new(cc, config))),
@@ -154,11 +154,25 @@ fn main() -> Result<()> {
 //          Add Bencode encoding/decoding for torrent files [Bendy](https://crates.io/crates/bendy)
 //          Add uTorrent/qBittorrent integration
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub(crate) struct Image {
     path: PathBuf,
     filename: String,
     size: u64,
+    // TODO: Add GIF animation
+    // see https://github.com/Gui-Yom/vibin/blob/26e1a89a193d16754a1e33bd495aa51cd9b886a1/src/main.rs
+    texture_handle: Option<TextureHandle>,
+}
+
+impl Image {
+    // ASSERT: ONLY CALLABLE WHEN TEXTURE_HANDLE IS SOME
+    fn calculate_image_dimension(&self, image_area: usize) -> egui::Vec2 {
+        let texture_handle = self.texture_handle.as_ref().unwrap();
+        let scaling_factor = ((image_area as f32 / texture_handle.size()[0] as f32)
+            / texture_handle.size()[1] as f32)
+            .sqrt();
+        texture_handle.size_vec2() * scaling_factor
+    }
 }
 
 impl PartialEq for Image {
@@ -175,6 +189,7 @@ struct DialogMessage(Cow<'static, str>, bool);
 
 pub(crate) struct Qtm {
     config: QtmConfig,
+
     dialog: Option<DialogMessage>,
     dialog_msg_receiver: Option<mpsc::Receiver<DialogMessage>>,
 
@@ -489,8 +504,7 @@ impl eframe::App for Qtm {
                         }
 
                         // Images
-                        // TODO: (1) Add image preview (open in default application/use preview tooltip)
-                        //       (2) Add built-in video thumbnail generator
+                        // TODO: Add built-in video thumbnail generator
 
                         ui.vertical(|ui| {
                             ui.horizontal(|ui| {
@@ -502,6 +516,7 @@ impl eframe::App for Qtm {
                                     {
                                         if let Some(image) = file_dialog::select_image(
                                             self.config.default_directory.as_deref(),
+                                            ui
                                         ) {
                                             if !self.images.contains(&image) {
                                                 self.images.push(image);
@@ -560,7 +575,7 @@ impl eframe::App for Qtm {
                                 })
                                 .body(|mut body| {
                                     for (index, image) in self.images.iter().enumerate() {
-                                        let clicked = body.row(20., |mut row| {
+                                        let response = body.row(20., |mut row| {
                                             row.col(|ui| {
                                                 ui.monospace(index.to_string());
                                             });
@@ -571,8 +586,15 @@ impl eframe::App for Qtm {
                                                 ui.monospace(ByteSize(image.size).to_string());
                                             });
                                         });
-                                        if clicked {
+                                        if response.clicked() {
                                             self.selected_index = Some(index);
+                                        }
+                                        if response.hovered() && image.texture_handle.is_some() {
+                                            show_tooltip(ui.ctx(), Id::new("image preview"), |ui| {
+                                                ui.image(image.texture_handle.as_ref().unwrap(),
+                                                    image.calculate_image_dimension(self.config.image_area)
+                                                )
+                                            });
                                         }
                                     }
                                     self.selected_index

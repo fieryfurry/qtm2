@@ -2,7 +2,9 @@
 
 use std::path::{Path, PathBuf};
 
+use eframe::egui::{ColorImage, TextureHandle, Ui};
 use rfd::FileDialog;
+use tracing::warn;
 
 use super::Image;
 
@@ -52,7 +54,7 @@ pub(crate) fn select_content<P: AsRef<Path> + Clone>(
 }
 
 // TODO: Add all supported file extensions
-pub(crate) fn select_image<P: AsRef<Path> + Clone>(default_directory: Option<P>) -> Option<Image> {
+pub(crate) fn select_image<P: AsRef<Path> + Clone>(default_directory: Option<P>, ui: &mut Ui) -> Option<Image> {
     create_file_dialog(default_directory)
         .add_filter(
             "image",
@@ -63,5 +65,24 @@ pub(crate) fn select_image<P: AsRef<Path> + Clone>(default_directory: Option<P>)
             path: f.clone(),
             filename: f.file_name().unwrap().to_string_lossy().into_owned(),
             size: f.metadata().unwrap().len(),
+            texture_handle: {
+                match create_image_texture_handle(f, ui) {
+                    Ok(th) => Some(th),
+                    Err(err) => {
+                        warn!(?err, "Unable to load image as texture; image preview unavailable");
+                        None
+                    }
+                }
+            }
         })
+}
+
+fn create_image_texture_handle<P: AsRef<Path>>(image_path: P, ui: &mut Ui) -> anyhow::Result<TextureHandle> {
+    let image = image::io::Reader::open(image_path.as_ref())?.decode()?;
+    let size = [image.width() as _, image.height() as _];
+    let image_buffer = image.to_rgba8();
+    let pixels = image_buffer.as_flat_samples();
+
+    let colour_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+    Ok(ui.ctx().load_texture(image_path.as_ref().to_string_lossy(), colour_image, Default::default()))
 }
