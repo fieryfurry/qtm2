@@ -40,10 +40,11 @@ fn proj_dirs() -> Result<ProjectDirs> {
     )
 }
 
-fn config_dir(filename: &str) -> PathBuf {
-    proj_dirs().unwrap().config_dir().join(filename)
+fn config_local_dir(filename: &str) -> PathBuf {
+    proj_dirs().unwrap().config_local_dir().join(filename)
 }
 
+// TODO: Add tracing section in README
 fn data_local_dir(filename: &str) -> PathBuf {
     proj_dirs().unwrap().data_local_dir().join(filename)
 }
@@ -164,7 +165,7 @@ fn main() -> Result<()> {
     info!("Started tracing");
 
     // Config init
-    let config = QtmConfig::load(config_dir("config.toml"));
+    let config = QtmConfig::load(config_local_dir("config.toml"));
     let is_authenticated = Rc::new(Cell::new(false));
     let is_authenticated_clone = is_authenticated.clone();
 
@@ -184,7 +185,7 @@ fn main() -> Result<()> {
             Box::new(PasswordPrompt::new(
                 cc,
                 config.theme,
-                config_dir(""),
+                config_local_dir(""),
                 is_authenticated_clone,
             ))
         }),

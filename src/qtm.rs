@@ -22,7 +22,7 @@ use crate::qtm_config::{QtmConfig, QtmTheme};
 use crate::selectable_table::{Column, TableBuilder};
 use crate::torrent::create_torrent_file;
 use crate::{
-    cache_dir, config_dir, data_local_dir, file_dialog, get_style_by_theme, initialise_dirs,
+    cache_dir, config_local_dir, data_local_dir, file_dialog, get_style_by_theme, initialise_dirs,
     selectable_table, set_context, DialogMessage,
 };
 
@@ -141,7 +141,7 @@ impl eframe::App for Qtm {
 
                         ctx.set_style(get_style_by_theme(self.config.theme));
                         info!("Theme changed to {}", self.config.theme);
-                        self.config.save(config_dir("config.toml"));
+                        self.config.save(config_local_dir("config.toml"));
                     }
 
                     if ui
@@ -157,7 +157,7 @@ impl eframe::App for Qtm {
                         {
                             info!("Default directory set to {}", path.to_string_lossy());
                             self.config.default_directory = Some(path);
-                            self.config.save(config_dir("config.toml"));
+                            self.config.save(config_local_dir("config.toml"));
                         }
                     }
                     ui.add_space(110.);
@@ -169,7 +169,7 @@ impl eframe::App for Qtm {
                         .on_hover_text("CAUTION: clear all cache")
                         .clicked()
                     {
-                        for dir in [cache_dir(""), config_dir(""), data_local_dir("")] {
+                        for dir in [cache_dir(""), config_local_dir(""), data_local_dir("")] {
                             fs::remove_dir_all(dir).unwrap();
                         }
                         initialise_dirs().unwrap();
