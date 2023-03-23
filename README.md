@@ -27,10 +27,10 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [x] Torrent file (de)serialisation
 - [x] Image preview
 - [x] UI Customisation
+- [x] Password prompt
 
 ### Priority:
 - [ ] Networking
-- [ ] Password prompt
 - [ ] uTorrent/qBittorrent integration
 
 ### Future:
@@ -41,7 +41,7 @@ Please also note that the binary and its data structures are referred to as `qtm
 
 ## Installation
 ### Prebuilt binaries
-The latest binaries can be found in the [Releases](https://github.com/fieryfurry/qtm2/releases) section under the Assets sub-heading. 
+The latest binaries can be found in the [Releases](https://github.com/fieryfurry/qtm2/releases) section under the Assets sub-heading. They are automatically built using [GitHub Actions](https://github.com/fieryfurry/qtm2/actions/workflows/release.yml) on each release from the source code.
 
 ### Build from source
 #### Install dependencies (Linux ONLY)
