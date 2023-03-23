@@ -83,6 +83,7 @@ impl eframe::App for PasswordPrompt {
                         info!("Attempt to log in");
                         // TODO: authenticate username/password
                         if self.authenticate() {
+                            info!("Authenticated");
                             frame.close();
                         }
                     }

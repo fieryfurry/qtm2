@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
+use std::borrow::Cow;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
 
 use eframe::egui::{ColorImage, TextureHandle, TextureOptions, Ui};
 use rfd::FileDialog;
 use tracing::warn;
+
+use crate::DialogMessage;
 
 use super::Image;
 
@@ -54,35 +58,98 @@ pub(crate) fn select_content<P: AsRef<Path> + Clone>(
 }
 
 // TODO: Add all supported file extensions
-pub(crate) fn select_image<P: AsRef<Path> + Clone>(default_directory: Option<P>, ui: &mut Ui) -> Option<Image> {
-    create_file_dialog(default_directory)
+pub(crate) fn select_images<P: AsRef<Path> + Clone>(
+    default_directory: Option<P>,
+    current_images: &Vec<Image>,
+    sender: &mpsc::Sender<DialogMessage>,
+    ui: &mut Ui,
+) -> Option<Vec<Image>> {
+    let Some(image_paths) = create_file_dialog(default_directory)
         .add_filter(
             "image",
             &["png", "PNG", "jpg", "JPG", "jpeg", "JPEG", "gif", "GIF"],
         )
-        .pick_file()
-        .map(|f| Image {
-            path: f.clone(),
-            filename: f.file_name().unwrap().to_string_lossy().into_owned(),
-            size: f.metadata().unwrap().len(),
-            texture_handle: {
-                match create_image_texture_handle(f, ui) {
-                    Ok(th) => Some(th),
-                    Err(err) => {
-                        warn!(?err, "Unable to load image as texture; image preview unavailable");
-                        None
-                    }
+        .pick_files() else {
+        return None;
+    };
+
+    let current_image_paths: Vec<&Path> = current_images
+        .iter()
+        .map(|image| image.path.as_path())
+        .collect();
+
+    let mut duplicate_image_filenames = Vec::new();
+
+    let images = Some(
+        image_paths
+            .iter()
+            .filter(|image_path| {
+                if current_image_paths.contains(&(image_path.as_ref())) {
+                    duplicate_image_filenames.push(
+                        image_path
+                            .file_name()
+                            .unwrap()
+                            .to_string_lossy()
+                            .into_owned(),
+                    );
+                    false
+                } else {
+                    true
                 }
-            }
-        })
+            })
+            .map(|image_path| Image {
+                path: image_path.clone(),
+                filename: image_path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+                size: image_path.metadata().unwrap().len(),
+                texture_handle: {
+                    // TODO: Add multi-threaded texture loading support for many large image files
+                    match create_image_texture_handle(image_path, ui) {
+                        Ok(th) => Some(th),
+                        Err(err) => {
+                            warn!(
+                                ?err,
+                                "Unable to load image as texture; image preview unavailable"
+                            );
+                            None
+                        }
+                    }
+                },
+            })
+            .collect(),
+    );
+    if !duplicate_image_filenames.is_empty() {
+        sender
+            .send(DialogMessage(
+                Cow::Owned(format!("Duplicate image:\n\n{}", {
+                    duplicate_image_filenames
+                        .into_iter()
+                        .collect::<Vec<String>>()
+                        .join("\n")
+                })),
+                true,
+            ))
+            .unwrap();
+    }
+    images
 }
 
-fn create_image_texture_handle<P: AsRef<Path>>(image_path: P, ui: &mut Ui) -> anyhow::Result<TextureHandle> {
+fn create_image_texture_handle<P: AsRef<Path>>(
+    image_path: P,
+    ui: &mut Ui,
+) -> anyhow::Result<TextureHandle> {
     let image = image::io::Reader::open(image_path.as_ref())?.decode()?;
     let size = [image.width() as _, image.height() as _];
     let image_buffer = image.to_rgba8();
     let pixels = image_buffer.as_flat_samples();
 
     let colour_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-    Ok(ui.ctx().load_texture(image_path.as_ref().to_string_lossy(), colour_image, TextureOptions::LINEAR))
+    Ok(ui.ctx().load_texture(
+        image_path.as_ref().to_string_lossy(),
+        colour_image,
+        TextureOptions::LINEAR,
+    ))
 }

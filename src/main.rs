@@ -77,17 +77,6 @@ fn initialise_dirs() -> Result<()> {
     Ok(())
 }
 
-fn initialise_tracing() -> Result<()> {
-    let file_appender = tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-    let subscriber = tracing_subscriber::fmt()
-        .with_writer(non_blocking)
-        .with_max_level(Level::INFO)
-        .with_ansi(false)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber).map_err(anyhow::Error::new)
-}
-
 fn get_style_by_theme(theme: QtmTheme) -> Style {
     let mut style = Style {
         text_styles: [
@@ -163,7 +152,14 @@ fn main() -> Result<()> {
     initialise_dirs()?;
 
     // Tracing init
-    initialise_tracing()?;
+    let file_appender = tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_max_level(Level::INFO)
+        .with_ansi(false)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).map_err(anyhow::Error::new)?;
 
     info!("Started tracing");
 

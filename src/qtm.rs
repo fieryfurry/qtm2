@@ -8,29 +8,29 @@ use std::sync::mpsc::TryRecvError;
 
 use bytesize::ByteSize;
 use eframe::egui;
-use eframe::egui::{
-    Align, Context, Frame, Grid, Id, Layout, Rounding, ScrollArea, show_tooltip, vec2, widgets,
-};
 use eframe::egui::TextStyle::Monospace;
+use eframe::egui::{
+    show_tooltip, vec2, widgets, Align, Context, Frame, Grid, Id, Layout, Rounding, ScrollArea,
+};
 use strum::IntoEnumIterator;
 use tracing::{info, warn};
 
-use crate::{
-    cache_dir, config_dir, data_local_dir, DialogMessage, file_dialog, get_style_by_theme,
-    initialise_dirs, selectable_table, set_context,
-};
 use crate::category::Category;
 use crate::file_dialog::select_content;
 use crate::image::Image;
 use crate::qtm_config::{QtmConfig, QtmTheme};
 use crate::selectable_table::{Column, TableBuilder};
 use crate::torrent::create_torrent_file;
+use crate::{
+    cache_dir, config_dir, data_local_dir, file_dialog, get_style_by_theme, initialise_dirs,
+    selectable_table, set_context, DialogMessage,
+};
 
 pub(crate) struct Qtm {
     config: QtmConfig,
 
     dialog: Option<DialogMessage>,
-    dialog_msg_receiver: Option<mpsc::Receiver<DialogMessage>>,
+    dialog_channel: (mpsc::Sender<DialogMessage>, mpsc::Receiver<DialogMessage>),
 
     is_file: bool,
     content: Option<(PathBuf, String, u64)>,
@@ -53,7 +53,7 @@ impl Qtm {
         Self {
             config,
             dialog: None,
-            dialog_msg_receiver: None,
+            dialog_channel: mpsc::channel(),
             is_file: true,
             content: None,
             categories: [Category::None; 5],
@@ -106,12 +106,12 @@ impl Qtm {
 
 impl eframe::App for Qtm {
     fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
-        if let Some(receiver) = &self.dialog_msg_receiver {
-            match receiver.try_recv() {
+        if self.dialog.is_none() || !self.dialog.as_ref().unwrap().1 {
+            match self.dialog_channel.1.try_recv() {
                 Ok(message) => self.dialog = Some(message),
                 Err(err) => match err {
                     TryRecvError::Empty => {}
-                    TryRecvError::Disconnected => self.dialog_msg_receiver = None,
+                    TryRecvError::Disconnected => panic!(), // ASSERT: `self` always hold the sender too
                 },
             }
         }
@@ -172,9 +172,6 @@ impl eframe::App for Qtm {
                         for dir in [cache_dir(""), config_dir(""), data_local_dir("")] {
                             fs::remove_dir_all(dir).unwrap();
                         }
-                        {
-                            tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
-                        }
                         initialise_dirs().unwrap();
                         frame.close();
                     }
@@ -191,17 +188,18 @@ impl eframe::App for Qtm {
                         .clicked()
                     {
                         info!("Begin torrent upload");
-                        self.dialog = Some(DialogMessage(
-                            Cow::Borrowed("Creating torrent...\n\nThis may take a while..."),
-                            false,
-                        ));
+                        self.dialog_channel
+                            .0
+                            .send(DialogMessage(
+                                Cow::Borrowed("Creating torrent...\n\nThis may take a while..."),
+                                false,
+                            ))
+                            .unwrap();
 
                         let content_path = self.content.clone().unwrap().0;
-                        let (tx, rx) = mpsc::channel();
-                        self.dialog_msg_receiver = Some(rx);
-
+                        let sender = self.dialog_channel.0.clone();
                         std::thread::spawn(|| {
-                            create_torrent_file(content_path, tx);
+                            create_torrent_file(content_path, sender);
                         });
                     }
                 });
@@ -325,16 +323,13 @@ impl eframe::App for Qtm {
                                         .add(egui::Button::new("...").min_size(vec2(40., 10.)))
                                         .clicked()
                                     {
-                                        if let Some(image) = file_dialog::select_image(
+                                        if let Some(mut images) = file_dialog::select_images(
                                             self.config.default_directory.as_deref(),
-                                            ui
+                                            &self.images,
+                                            &self.dialog_channel.0,
+                                            ui,
                                         ) {
-                                            if !self.images.contains(&image) {
-                                                self.images.push(image);
-                                            } else {
-                                                warn!(?image.path, "Duplicate image");
-                                                self.dialog = Some(DialogMessage(Cow::Owned(format!("Duplicate image: \n\n{}", image.filename)), true));
-                                            }
+                                            self.images.append(&mut images);
                                         }
                                     }
                                 });
@@ -403,7 +398,7 @@ impl eframe::App for Qtm {
                                         if response.hovered() && image.texture_handle.is_some() {
                                             show_tooltip(ui.ctx(), Id::new("image preview"), |ui| {
                                                 ui.image(image.texture_handle.as_ref().unwrap(),
-                                                    image.calculate_image_dimension(self.config.image_area)
+                                                         image.calculate_image_dimension(self.config.image_area),
                                                 )
                                             });
                                         }
@@ -442,11 +437,11 @@ impl eframe::App for Qtm {
                     });
                 ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
                     ui.add_space(5.);
-                   if ui.hyperlink_to("Uploading Rules","https://www.gaytor.rent/rules.php#102").clicked() {
+                    if ui.hyperlink_to("Uploading Rules", "https://www.gaytor.rent/rules.php#102").clicked() {
                         if let Err(err) = open::that("https://www.gaytor.rent/rules.php#102") {
                             warn!(?err, "Failed to open uploading rules link: https://www.gaytor.rent/rules.php#102");
                         }
-                   }
+                    }
                 });
             });
     }
