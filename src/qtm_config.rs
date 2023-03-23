@@ -8,9 +8,7 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
-use tracing::warn;
-
-use crate::unwrap_trace::UnwrapTrace;
+use tracing::{info, warn};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct QtmConfig {
@@ -35,17 +33,27 @@ impl Default for QtmConfig {
 
 impl QtmConfig {
     pub(crate) fn load<P: AsRef<Path>>(path: P) -> Self {
-        let file_content = fs::read_to_string(path).unwrap_or_warn(
-            "Unable to load the configuration file; \
-                IGNORE this warning if initialising",
-            |_| String::default(),
-        );
+        let file_content = match fs::read_to_string(path.as_ref()) {
+            Ok(string) => string,
+            Err(err) => {
+                warn!(?err, "Unable to load the configuration; IGNORE this warning if initialising");
+                info!("Attempt to save the default configuration");
+                QtmConfig::default().save(path);
+                return QtmConfig::default();
+            }
+        };
 
-        toml::from_str(&file_content).unwrap_or_warn(
-            "Unable to deserialise the configuration file; \
-            IGNORE this warning if initialising; loading default configuration",
-            |_| QtmConfig::default(),
-        )
+        match toml::from_str::<Self>(&file_content) {
+            Ok(config) => {
+                info!("Loaded the serialised configuration successfully");
+                config
+            },
+            Err(err) => {
+                warn!(?err, "Unable to deserialise the configuration; loading default configuration");
+                QtmConfig::default()
+            }
+        }
+
     }
 
     //  TODO: Add auto. log clean-up function
@@ -55,10 +63,13 @@ impl QtmConfig {
             return;
         };
 
-        fs::write(path, config).unwrap_or_warn(
-            "Unable to save the serialised configuration; saving aborted",
-            |_| (),
-        )
+        match fs::write(path, config) {
+            Ok(()) => info!("Saved the serialised configuration successfully"),
+            Err(err) => warn!(
+                ?err,
+                "Unable to save the serialised configuration; saving aborted"
+            ),
+        }
     }
 }
 

@@ -138,10 +138,10 @@ impl eframe::App for Qtm {
                         .clicked()
                     {
                         self.config.theme = -self.config.theme;
-                        self.config.save(config_dir("config.toml"));
 
                         ctx.set_style(get_style_by_theme(self.config.theme));
                         info!("Theme changed to {}", self.config.theme);
+                        self.config.save(config_dir("config.toml"));
                     }
 
                     if ui
@@ -149,13 +149,13 @@ impl eframe::App for Qtm {
                             vec2(ui.available_height(), ui.available_height()),
                             widgets::Button::new("☆"),
                         )
-                        .on_hover_text("Change default directory")
+                        .on_hover_text("Set default directory")
                         .clicked()
                     {
                         if let Some((path, _, _)) =
                             select_content(false, self.config.default_directory.as_deref())
                         {
-                            info!("Default directory changed to {}", path.to_string_lossy());
+                            info!("Default directory set to {}", path.to_string_lossy());
                             self.config.default_directory = Some(path);
                             self.config.save(config_dir("config.toml"));
                         }

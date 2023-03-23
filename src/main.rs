@@ -168,8 +168,6 @@ fn main() -> Result<()> {
     let is_authenticated = Rc::new(Cell::new(false));
     let is_authenticated_clone = is_authenticated.clone();
 
-    info!("Loaded configuration");
-
     // Egui init
     eframe::run_native(
         &format!(

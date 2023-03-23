@@ -80,7 +80,7 @@ impl eframe::App for PasswordPrompt {
                         .add_sized(vec2(200., 40.), widgets::Button::new("LOG IN"))
                         .clicked()
                     {
-                        info!("Attempt to log in");
+                        info!("Attempted to log in");
                         // TODO: authenticate username/password
                         if self.authenticate() {
                             info!("Authenticated");
