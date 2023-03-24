@@ -32,7 +32,7 @@ mod torrent;
 mod unwrap_trace;
 
 fn proj_dirs() -> Result<ProjectDirs> {
-    ProjectDirs::from("proton.me", "fieryfurry", "quick-torrent-maker-2").ok_or(
+    ProjectDirs::from("","", "quick-torrent-maker-2").ok_or(
         anyhow::Error::from(Error::new(
             ErrorKind::NotFound,
             "No valid home directory path found",
