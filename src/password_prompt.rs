@@ -4,7 +4,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use eframe::egui;
-use eframe::egui::{vec2, widgets, Context, Frame};
+use eframe::egui::{Context, Frame, vec2, widgets};
 use tracing::info;
 
 use crate::qtm_config::QtmTheme;
@@ -24,7 +24,7 @@ impl PasswordPrompt {
         cc: &eframe::CreationContext<'_>,
         theme: QtmTheme,
         is_authenticated: Rc<Cell<bool>>,
-        networking: Rc<QtmNetworking>
+        networking: Rc<QtmNetworking>,
     ) -> Self {
         info!("Started Password Prompt");
         set_context(cc, theme);
@@ -43,8 +43,16 @@ impl PasswordPrompt {
             && self.password.is_ascii()
     }
 
-    fn authenticate(&self) {
-        self.is_authenticated.set(self.networking.login(self.username.clone(), self.password.clone()));
+    fn authenticate(&mut self, frame: &mut eframe::Frame) {
+        info!("Attempted to log in");
+        if self.networking.login(self.username.clone(), self.password.clone()) {
+            self.is_authenticated.set(true);
+            frame.close();
+        } else {
+            // TODO: add 'incorrect login credential' message
+            self.username.clear();
+            self.password.clear();
+        }
     }
 }
 
@@ -66,11 +74,13 @@ impl eframe::App for PasswordPrompt {
                     ui.horizontal(|ui| {
                         ui.add_space(20.);
                         ui.add_sized(vec2(100., 20.), widgets::Label::new("Password:"));
-                        ui.add_sized(
+                        if ui.add_sized(
                             vec2(200., 20.),
                             widgets::text_edit::TextEdit::singleline(&mut self.password)
                                 .password(true),
-                        );
+                        ).lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                            self.authenticate(frame);
+                        }
                     });
                     ui.add_space(10.);
                     ui.set_enabled(self.is_valid());
@@ -78,11 +88,7 @@ impl eframe::App for PasswordPrompt {
                         .add_sized(vec2(200., 40.), widgets::Button::new("LOG IN"))
                         .clicked()
                     {
-                        info!("Attempted to log in");
-                        self.authenticate();
-                        if self.is_authenticated.get() {
-                            frame.close();
-                        }
+                        self.authenticate(frame);
                     }
                 });
             });

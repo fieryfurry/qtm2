@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
+use reqwest::{header, Proxy};
 use reqwest::blocking::{Body, Client};
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{header, Proxy, StatusCode};
 use tracing::{info, warn};
 
 #[derive(Debug)]
@@ -18,38 +18,33 @@ impl QtmNetworking {
     }
 
     pub(crate) fn login(&self, username: String, password: String) -> bool {
-        let boundary = Self::get_boundary();
-        let form =Self::get_login_form(
-            username, password, boundary.clone(),
-        );
-        let mut request = self
+        let form = Self::get_login_form(username, password);
+        let request = self
             .client
             .post("https://www.gaytorrent.ru/takelogin.php")
             .header(
                 header::CONTENT_TYPE,
-                HeaderValue::from_str(&format!("multipart/form-data; boundary={}", boundary))
-                    .unwrap(),
+                HeaderValue::from_static("multipart/form-data; boundary=--"),
             )
             .header(header::CONTENT_LENGTH, form.as_bytes().len())
-            .build()
-            .unwrap();
-        *request.body_mut() = Some(Body::from(form));
+            .body(Body::from(form));
 
-        match  self.client.execute(request).map_err(anyhow::Error::new) {
-            Ok(response) => match response.status() {
-                StatusCode::FOUND => {
-                    info!("Authenticated");
-                    true
-                }
-                StatusCode::OK => {
-                    info!("Not authenticated");
-                    false
-                }
-                others => {
-                    info!(?others, "Unmatched status code; not authenticated");
-                    false
-                }
-            },
+        match request.send().map_err(anyhow::Error::new) {
+            Ok(response) =>
+                match response.url().path() {
+                    "/genrelist.php" => {
+                        info!("Authenticated");
+                        true
+                    }
+                    "/takelogin.php" => {
+                        info!("Not authenticated");
+                        false
+                    }
+                    others => {
+                        info!(?others, "Unmatched redirect; not authenticated");
+                        false
+                    }
+                },
             Err(err) => {
                 warn!(?err, "Error when sending request");
                 false
@@ -57,19 +52,15 @@ impl QtmNetworking {
         }
     }
 
-    fn get_boundary() -> String {
-        concat!("-----------------------------", "1234567").to_owned()
-    }
-
     fn get_form_part(value: &str) -> String {
         format!("Content-Disposition: form-data; Content-Type: text/plain; charset=utf8; name=\"{value}\"")
     }
 
-    fn get_login_form(username: String, password: String, boundary: String) -> String {
+    fn get_login_form(username: String, password: String) -> String {
         format!(
-            "{boundary}\r\n{}\r\n\r\n{username}\r\n{boundary}\r\n{boundary}\r\n\
-        {}\r\n\r\n{password}\r\n{boundary}\r\n{boundary}\r\n{}\r\n\r\n/genrelist.php\r\n\
-        {boundary}\r\n{boundary}--\r\n",
+            "----\r\n{}\r\n\r\n{username}\r\n----\r\n----\r\n\
+        {}\r\n\r\n{password}\r\n----\r\n----\r\n{}\r\n\r\n/genrelist.php\r\n\
+        ----\r\n------\r\n",
             Self::get_form_part("username"),
             Self::get_form_part("password"),
             Self::get_form_part("returnto")
@@ -101,7 +92,7 @@ impl QtmNetworking {
             .user_agent(Self::get_user_agent_by_os())
             .default_headers(Self::get_default_headers())
             .cookie_store(true)
-         // .proxy(Proxy::https("localhost:8080").unwrap())
+            .proxy(Proxy::https("localhost:8080").unwrap())
             .build();
         if let Err(err) = &client {
             warn!(?err, "Failed to construct client");
