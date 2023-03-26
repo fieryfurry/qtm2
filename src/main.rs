@@ -11,15 +11,16 @@ use std::rc::Rc;
 
 use anyhow::Result;
 use directories::ProjectDirs;
-use eframe::egui::TextStyle::*;
-use eframe::egui::{vec2, Color32, FontData, FontDefinitions, FontId, Pos2, Style, Visuals};
+use eframe::egui::{Color32, FontData, FontDefinitions, FontId, Pos2, Style, vec2, Visuals};
 use eframe::egui::{FontFamily, Margin, Rounding};
+use eframe::egui::TextStyle::*;
 use tracing::{error, info, Level};
 
 use crate::image::Image;
 use crate::password_prompt::PasswordPrompt;
 use crate::qtm::Qtm;
 use crate::qtm_config::{QtmConfig, QtmTheme, QtmVersion};
+use crate::qtm_networking::QtmNetworking;
 
 mod category;
 mod file_dialog;
@@ -27,17 +28,16 @@ mod image;
 mod password_prompt;
 mod qtm;
 mod qtm_config;
+mod qtm_networking;
 mod selectable_table;
 mod torrent;
 mod unwrap_trace;
 
 fn proj_dirs() -> Result<ProjectDirs> {
-    ProjectDirs::from("","", "quick-torrent-maker-2").ok_or(
-        anyhow::Error::from(Error::new(
-            ErrorKind::NotFound,
-            "No valid home directory path found",
-        )),
-    )
+    ProjectDirs::from("", "", "quick-torrent-maker-2").ok_or(anyhow::Error::from(Error::new(
+        ErrorKind::NotFound,
+        "No valid home directory path found",
+    )))
 }
 
 fn config_local_dir(filename: &str) -> PathBuf {
@@ -87,7 +87,7 @@ fn get_style_by_theme(theme: QtmTheme) -> Style {
             (Button, FontId::new(18.0, FontFamily::Proportional)),
             (Small, FontId::new(14.0, FontFamily::Proportional)),
         ]
-        .into(),
+            .into(),
         ..Default::default()
     };
     style.spacing.window_margin = Margin::same(20.0);
@@ -169,6 +169,11 @@ fn main() -> Result<()> {
     let is_authenticated = Rc::new(Cell::new(false));
     let is_authenticated_clone = is_authenticated.clone();
 
+    // Networking init
+    let networking = Rc::new(QtmNetworking::try_new()?);
+    let networking_clone = networking.clone();
+    info!("Started networking");
+
     // Egui init
     eframe::run_native(
         &format!(
@@ -185,18 +190,18 @@ fn main() -> Result<()> {
             Box::new(PasswordPrompt::new(
                 cc,
                 config.theme,
-                config_local_dir(""),
                 is_authenticated_clone,
+                networking_clone,
             ))
         }),
     )
-    .map_err(|err| {
-        error!(
+        .map_err(|err| {
+            error!(
             ?err,
             "QTM2 failed to set up a graphics context for password prompt"
         );
-        anyhow::Error::msg(err.to_string())
-    })?;
+            anyhow::Error::msg(err.to_string())
+        })?;
 
     if !is_authenticated.get() {
         info!("Not authenticated; exiting");
@@ -217,8 +222,8 @@ fn main() -> Result<()> {
         },
         Box::new(|cc| Box::new(Qtm::new(cc, config))),
     )
-    .map_err(|err| {
-        error!(?err, "QTM2 failed to set up a graphics context");
-        anyhow::Error::msg(err.to_string())
-    })
+        .map_err(|err| {
+            error!(?err, "QTM2 failed to set up a graphics context");
+            anyhow::Error::msg(err.to_string())
+        })
 }

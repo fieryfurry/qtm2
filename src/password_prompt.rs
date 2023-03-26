@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
 use std::cell::Cell;
-use std::path::PathBuf;
 use std::rc::Rc;
 
 use eframe::egui;
@@ -9,30 +8,31 @@ use eframe::egui::{vec2, widgets, Context, Frame};
 use tracing::info;
 
 use crate::qtm_config::QtmTheme;
+use crate::qtm_networking::QtmNetworking;
 use crate::set_context;
 
 #[derive(Debug)]
 pub(crate) struct PasswordPrompt {
-    pub(crate) cache_path: PathBuf,
     pub(crate) username: String,
     pub(crate) password: String,
     pub(crate) is_authenticated: Rc<Cell<bool>>,
+    pub(crate) networking: Rc<QtmNetworking>,
 }
 
 impl PasswordPrompt {
     pub(crate) fn new(
         cc: &eframe::CreationContext<'_>,
         theme: QtmTheme,
-        cache_path: PathBuf,
         is_authenticated: Rc<Cell<bool>>,
+        networking: Rc<QtmNetworking>
     ) -> Self {
         info!("Started Password Prompt");
         set_context(cc, theme);
         Self {
-            cache_path,
-            is_authenticated,
             username: String::new(),
             password: String::new(),
+            is_authenticated,
+            networking,
         }
     }
 
@@ -43,10 +43,8 @@ impl PasswordPrompt {
             && self.password.is_ascii()
     }
 
-    fn authenticate(&self) -> bool {
-        // TODO: Authenticate and store cookie in `cache_path`
-        self.is_authenticated.set(true);
-        true
+    fn authenticate(&self) {
+        self.is_authenticated.set(self.networking.login(self.username.clone(), self.password.clone()));
     }
 }
 
@@ -81,9 +79,8 @@ impl eframe::App for PasswordPrompt {
                         .clicked()
                     {
                         info!("Attempted to log in");
-                        // TODO: authenticate username/password
-                        if self.authenticate() {
-                            info!("Authenticated");
+                        self.authenticate();
+                        if self.is_authenticated.get() {
                             frame.close();
                         }
                     }
