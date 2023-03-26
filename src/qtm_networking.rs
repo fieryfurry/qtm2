@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
-use reqwest::blocking::{Client};
-use reqwest::blocking::multipart::Form;
+use reqwest::blocking::{Body, Client};
+use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::{header, StatusCode};
-use reqwest::header::HeaderMap;
 use tracing::{info, warn};
 
 #[derive(Debug)]
@@ -19,29 +18,44 @@ impl QtmNetworking {
     }
 
     pub(crate) fn login(&self, username: String, password: String) -> bool {
-        let form = Self::get_login_multipart(username, password);
-        dbg!(&form);
-        let response = self.client.post("https://www.gaytorrent.ru/takelogin.php")
-            .multipart(form)
-            .send()
-            .map_err(anyhow::Error::new);
+        let boundary = Self::get_boundary();
+        let form =Self::get_login_form(
+            username, password, boundary.clone(),
+        );
+        dbg!(form.len());
+        println!("{form}");
+        let mut request = self
+            .client
+            .post("https://www.gaytorrent.ru/takelogin.php")
+            .header(
+                header::CONTENT_TYPE,
+                HeaderValue::from_str(&format!("multipart/form-data; boundary={}", boundary))
+                    .unwrap(),
+            )
+            .header(header::CONTENT_LENGTH, form.as_bytes().len())
+            .build()
+            .unwrap();
+        *request.body_mut() = Some(Body::from(form));
+        dbg!(&request);
+
+        let response = self.client.execute(request).map_err(anyhow::Error::new);
+
+        dbg!(&response);
         match response {
-            Ok(response) => {
-                match response.status() {
-                    StatusCode::FOUND => {
-                        info!("Authenticated");
-                        true
-                    },
-                    StatusCode::OK => {
-                        info!("Not authenticated");
-                        false
-                    },
-                    others => {
-                        info!(?others, "Unmatched status code; not authenticated");
-                        false
-                    }
+            Ok(response) => match response.status() {
+                StatusCode::FOUND => {
+                    info!("Authenticated");
+                    true
                 }
-            }
+                StatusCode::OK => {
+                    info!("Not authenticated");
+                    false
+                }
+                others => {
+                    info!(?others, "Unmatched status code; not authenticated");
+                    false
+                }
+            },
             Err(err) => {
                 warn!(?err, "Error when sending request");
                 false
@@ -49,11 +63,23 @@ impl QtmNetworking {
         }
     }
 
-    pub fn get_login_multipart(username: String, password: String) -> Form {
-        Form::new()
-            .text("username", username)
-            .text("password", password)
-            .text("returnto", "/genrelist.php")
+    fn get_boundary() -> String {
+        concat!("-----------------------------", "1234567").to_owned()
+    }
+
+    fn get_form_part(value: &str) -> String {
+        format!("Content-Disposition: form-data; Content-Type: text/plain; charset=utf8; name=\"{value}\"")
+    }
+
+    fn get_login_form(username: String, password: String, boundary: String) -> String {
+        format!(
+            "{boundary}\r\n{}\r\n\r\n{username}\r\n{boundary}\r\n{boundary}\r\n\
+        {}\r\n\r\n{password}\r\n{boundary}\r\n{boundary}\r\n{}\r\n\r\n/genrelist.php\r\n\
+        {boundary}\r\n{boundary}--\r\n",
+            Self::get_form_part("username"),
+            Self::get_form_part("password"),
+            Self::get_form_part("returnto")
+        )
     }
 
     fn get_user_agent_by_os() -> &'static str {
@@ -70,18 +96,9 @@ impl QtmNetworking {
 
     fn get_default_headers() -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            header::HOST,
-            header::HeaderValue::from_static("www.gaytorrent.ru"),
-        );
-        headers.insert(
-            header::CONNECTION,
-            header::HeaderValue::from_static("Keep-Alive"),
-        );
-        headers.insert(
-            header::CACHE_CONTROL,
-            header::HeaderValue::from_static("no-cache"),
-        );
+        headers.insert(header::HOST, HeaderValue::from_static("www.gaytorrent.ru"));
+        headers.insert(header::CONNECTION, HeaderValue::from_static("Keep-Alive"));
+        headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
         headers
     }
 
