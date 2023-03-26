@@ -2,7 +2,7 @@
 
 use reqwest::blocking::{Body, Client};
 use reqwest::header::{HeaderMap, HeaderValue};
-use reqwest::{header, StatusCode};
+use reqwest::{header, Proxy, StatusCode};
 use tracing::{info, warn};
 
 #[derive(Debug)]
@@ -22,8 +22,6 @@ impl QtmNetworking {
         let form =Self::get_login_form(
             username, password, boundary.clone(),
         );
-        dbg!(form.len());
-        println!("{form}");
         let mut request = self
             .client
             .post("https://www.gaytorrent.ru/takelogin.php")
@@ -36,12 +34,8 @@ impl QtmNetworking {
             .build()
             .unwrap();
         *request.body_mut() = Some(Body::from(form));
-        dbg!(&request);
 
-        let response = self.client.execute(request).map_err(anyhow::Error::new);
-
-        dbg!(&response);
-        match response {
+        match  self.client.execute(request).map_err(anyhow::Error::new) {
             Ok(response) => match response.status() {
                 StatusCode::FOUND => {
                     info!("Authenticated");
@@ -64,7 +58,7 @@ impl QtmNetworking {
     }
 
     fn get_boundary() -> String {
-        concat!("-----------------------------", "1234567").to_owned()
+        concat!("-----------------------------", "1089343").to_owned()
     }
 
     fn get_form_part(value: &str) -> String {
@@ -107,6 +101,7 @@ impl QtmNetworking {
             .user_agent(Self::get_user_agent_by_os())
             .default_headers(Self::get_default_headers())
             .cookie_store(true)
+            .proxy(Proxy::https("localhost:8080").unwrap())
             .build();
         if let Err(err) = &client {
             warn!(?err, "Failed to construct client");
