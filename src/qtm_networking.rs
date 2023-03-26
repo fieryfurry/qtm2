@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
+use std::convert::identity;
 use reqwest::{header, Proxy};
-use reqwest::blocking::{Body, Client};
+use reqwest::blocking::{Body, Client, ClientBuilder};
 use reqwest::header::{HeaderMap, HeaderValue};
 use tracing::{info, warn};
+
+use crate::file_dialog::Pred;
+
+impl Pred for ClientBuilder {}
 
 #[derive(Debug)]
 pub(crate) struct QtmNetworking {
@@ -93,7 +98,9 @@ impl QtmNetworking {
             .user_agent(Self::get_user_agent_by_os())
             .default_headers(Self::get_default_headers())
             .cookie_store(true)
-            .proxy(Proxy::https("localhost:8080").unwrap())
+            .pred(|_| cfg!(debug_assertions),
+                  |cb| cb.proxy(Proxy::https("localhost:8080").unwrap()),
+                  identity)
             .build();
         if let Err(err) = &client {
             warn!(?err, "Failed to construct client");

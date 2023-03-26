@@ -12,7 +12,7 @@ use crate::DialogMessage;
 
 use super::Image;
 
-trait Pred {
+pub(crate) trait Pred {
     fn pred<F1, F2, P, T>(self, predicate: P, true_fn: F1, false_fn: F2) -> T
     where
         P: FnOnce(&Self) -> bool,
