@@ -24,6 +24,7 @@ impl QtmNetworking {
             .post("https://www.gaytorrent.ru/takelogin.php")
             .header(
                 header::CONTENT_TYPE,
+                // TODO: longer and randomly-generated boundary
                 HeaderValue::from_static("multipart/form-data; boundary=--"),
             )
             .header(header::CONTENT_LENGTH, form.as_bytes().len())
