@@ -66,6 +66,9 @@ Please attach the relevant log in any bug report, after you have removed or cens
 
 Note: clearing the cache will also delete all logs, as well as the configurations and previously cached .torrent files. Use caution when performing this action!
 
+## Special Thanks
+- [mitmproxy](https://mitmproxy.org/): a free and open source interactive HTTPS proxy
+
 
 ## License
 QTM2 is licensed under the [BSD-2-Clause Plus Patent License](https://spdx.org/licenses/BSD-2-Clause-Patent.html). 
