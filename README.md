@@ -47,9 +47,9 @@ The latest binaries can be found in the [Releases](https://github.com/fieryfurry
 Note: dependency installation _only_ tested on Ubuntu
 | (Base) Distributions       | Dependency Installation                         |
 |----------------------------|------------------------------------------------:|
-| **Debian/Ubuntu**          | `sudo apt-get install libatk1.0-0 libgtk-3-dev` |
-| **Arch Linux**             | `sudo pacman -S atk-git gtk3`                   |
-| **Fedora**                 | `sudo dnf install atk gtk3-devel`               |
+| **Debian/Ubuntu**          | `sudo apt-get install libgtk-3-dev`             |
+| **Arch Linux**             | `sudo pacman -S gtk3`                           |
+| **Fedora**                 | `sudo dnf install gtk3-devel`                   |
 
 1. Follow the instruction on the official [Rust](https://www.rust-lang.org/tools/install) website to install the Rust toolchain, including `cargo`.
 2. Execute `cargo install --git https://github.com/fieryfurry/qtm2` in your terminal
