@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
 use std::convert::identity;
-use reqwest::{header, Proxy};
+
 use reqwest::blocking::{Body, Client, ClientBuilder};
 use reqwest::header::{HeaderMap, HeaderValue};
+use reqwest::{header, Proxy};
 use tracing::{info, warn};
 
 use crate::file_dialog::Pred;
@@ -22,35 +23,36 @@ impl QtmNetworking {
         })
     }
 
-    pub(crate) fn login(&self, username: String, password: String) -> bool {
-        let form = Self::get_login_form(username, password);
+    pub(crate) fn login(&self, username: &str, password: &str) -> bool {
+        let boundary = Self::generate_boundary();
+        let form = Self::get_login_form(username, password, &boundary);
         let request = self
             .client
             .post("https://www.gaytorrent.ru/takelogin.php")
             .header(
                 header::CONTENT_TYPE,
                 // TODO: longer and randomly-generated boundary
-                HeaderValue::from_static("multipart/form-data; boundary=--"),
+                HeaderValue::from_str(&format!("multipart/form-data; boundary={boundary}"))
+                    .unwrap(),
             )
             .header(header::CONTENT_LENGTH, form.as_bytes().len())
             .body(Body::from(form));
 
         match request.send().map_err(anyhow::Error::new) {
-            Ok(response) =>
-                match response.url().path() {
-                    "/genrelist.php" => {
-                        info!("Authenticated");
-                        true
-                    }
-                    "/takelogin.php" => {
-                        info!("Not authenticated");
-                        false
-                    }
-                    others => {
-                        info!(?others, "Unmatched redirect; not authenticated");
-                        false
-                    }
-                },
+            Ok(response) => match response.url().path() {
+                "/genrelist.php" => {
+                    info!("Authenticated");
+                    true
+                }
+                "/takelogin.php" => {
+                    info!("Not authenticated");
+                    false
+                }
+                others => {
+                    info!(?others, "Unmatched redirect; not authenticated");
+                    false
+                }
+            },
             Err(err) => {
                 warn!(?err, "Error when sending request");
                 false
@@ -58,15 +60,23 @@ impl QtmNetworking {
         }
     }
 
+    fn generate_boundary() -> String {
+        use rand::Rng;
+
+        let a: u64 = rand::thread_rng().gen();
+        let b: u64 = rand::thread_rng().gen();
+        format!("{:016x}--{:016x}", a, b)
+    }
+
     fn get_form_part(value: &str) -> String {
         format!("Content-Disposition: form-data; Content-Type: text/plain; charset=utf8; name=\"{value}\"")
     }
 
-    fn get_login_form(username: String, password: String) -> String {
+    fn get_login_form(username: &str, password: &str, boundary: &str) -> String {
         format!(
-            "----\r\n{}\r\n\r\n{username}\r\n----\r\n----\r\n\
-        {}\r\n\r\n{password}\r\n----\r\n----\r\n{}\r\n\r\n/genrelist.php\r\n\
-        ----\r\n------\r\n",
+            "--{boundary}\r\n{}\r\n\r\n{username}\r\n--{boundary}\r\n--{boundary}\r\n\
+        {}\r\n\r\n{password}\r\n--{boundary}\r\n--{boundary}\r\n{}\r\n\r\n/genrelist.php\r\n\
+        --{boundary}\r\n--{boundary}--\r\n",
             Self::get_form_part("username"),
             Self::get_form_part("password"),
             Self::get_form_part("returnto")
@@ -98,9 +108,11 @@ impl QtmNetworking {
             .user_agent(Self::get_user_agent_by_os())
             .default_headers(Self::get_default_headers())
             .cookie_store(true)
-            .pred(|_| cfg!(debug_assertions),
-                  |cb| cb.proxy(Proxy::https("localhost:8080").unwrap()),
-                  identity)
+            .pred(
+                |_| cfg!(debug_assertions),
+                |cb| cb.proxy(Proxy::https("localhost:8080").unwrap()),
+                identity,
+            )
             .build();
         if let Err(err) = &client {
             warn!(?err, "Failed to construct client");

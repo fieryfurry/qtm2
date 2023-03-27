@@ -45,7 +45,7 @@ impl PasswordPrompt {
 
     fn authenticate(&mut self, frame: &mut eframe::Frame) {
         info!("Attempted to log in");
-        if self.networking.login(self.username.clone(), self.password.clone()) {
+        if self.networking.login(&self.username, &self.password) {
             self.is_authenticated.set(true);
             frame.close();
         } else {
