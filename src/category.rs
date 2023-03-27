@@ -1,105 +1,97 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
-use std::fmt::{Display, Formatter};
-use strum_macros::EnumIter;
+use strum_macros::{Display, EnumIter, EnumString};
 
-#[derive(EnumIter, Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(EnumIter, EnumString, Display, Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum Category {
+    #[strum(serialize = "Select Category")]
     None,
+    #[strum(serialize = "Amateur")]
     Amateur,
+    #[strum(serialize = "Anal")]
     Anal,
+    #[strum(serialize = "Anime Games")]
     AnimeGames,
+    #[strum(serialize = "Asian")]
     Asian,
+    #[strum(serialize = "Bareback")]
     Bareback,
+    #[strum(serialize = "BDSM")]
     Bdsm,
+    #[strum(serialize = "Bears")]
     Bears,
+    #[strum(serialize = "Bisexual")]
     Bisexual,
+    #[strum(serialize = "Black")]
     Black,
+    #[strum(serialize = "Books & Magazines")]
     BooksMagazines,
+    #[strum(serialize = "Chubbies")]
     Chubbies,
+    #[strum(serialize = "Clips")]
     Clips,
+    #[strum(serialize = "Comic & Yaoi")]
     ComicYaoi,
+    #[strum(serialize = "Daddies / Sons")]
     DaddiesSons,
+    #[strum(serialize = "Dildos")]
     Dildos,
+    #[strum(serialize = "Fan Sites")]
     FanSites,
+    #[strum(serialize = "Fetish")]
     Fetish,
+    #[strum(serialize = "Fisting")]
     Fisting,
+    #[strum(serialize = "Grey / Older")]
     GreyOlder,
+    #[strum(serialize = "Group-Sex")]
     GroupSex,
+    #[strum(serialize = "Homemade")]
     Homemade,
+    #[strum(serialize = "Hunks")]
     Hunks,
+    #[strum(serialize = "Images")]
     Images,
+    #[strum(serialize = "Interracial")]
     Interracial,
+    #[strum(serialize = "Jocks")]
     Jocks,
+    #[strum(serialize = "Latino")]
     Latino,
+    #[strum(serialize = "Mature")]
     Mature,
+    #[strum(serialize = "Media Programs")]
     MediaPrograms,
+    #[strum(serialize = "Member")]
     Member,
+    #[strum(serialize = "Middle Eastern")]
     MiddleEastern,
+    #[strum(serialize = "Military")]
     Military,
+    #[strum(serialize = "Oral-Sex")]
     OralSex,
+    #[strum(serialize = "Softcore")]
     Softcore,
+    #[strum(serialize = "Solo")]
     Solo,
+    #[strum(serialize = "Straight older")]
     StraightOlder,
+    #[strum(serialize = "Straight younger")]
     StraightYounger,
+    #[strum(serialize = "Themed Movie")]
     ThemedMovie,
+    #[strum(serialize = "Trans")]
     Trans,
+    #[strum(serialize = "TV / Episodes")]
     TvEpisodes,
+    #[strum(serialize = "Twinks")]
     Twinks,
+    #[strum(serialize = "Vintage")]
     Vintage,
+    #[strum(serialize = "Voyeur")]
     Voyeur,
+    #[strum(serialize = "Wrestling and Sports")]
     WrestlingAndSports,
+    #[strum(serialize = "Youngblood")]
     Youngblood
-}
-
-impl Display for Category {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Category::None => write!(f, "Select Category"),
-            Category::Amateur => write!(f, "Amateur"),
-            Category::Anal => write!(f, "Anal"),
-            Category::AnimeGames => write!(f, "Anime Games"),
-            Category::Asian => write!(f, "Asian"),
-            Category::Bareback => write!(f, "Bareback"),
-            Category::Bdsm => write!(f, "BDSM"),
-            Category::Bears => write!(f, "Bears"),
-            Category::Bisexual => write!(f, "Bisexual"),
-            Category::Black => write!(f, "Black"),
-            Category::BooksMagazines => write!(f, "Books & Magazines"),
-            Category::Chubbies => write!(f, "Chubbies"),
-            Category::Clips => write!(f, "Clips"),
-            Category::ComicYaoi => write!(f, "Comic & Yaoi"),
-            Category::DaddiesSons => write!(f, "Daddies / Sons"),
-            Category::Dildos => write!(f, "Dildos"),
-            Category::FanSites => write!(f, "Fan Sites"),
-            Category::Fetish => write!(f, "Fetish"),
-            Category::Fisting => write!(f, "Fisting"),
-            Category::GreyOlder => write!(f, "Grey / Older"),
-            Category::GroupSex => write!(f, "Group-Sex"),
-            Category::Homemade => write!(f, "Homemade"),
-            Category::Hunks => write!(f, "Hunks"),
-            Category::Images => write!(f, "Images"),
-            Category::Interracial => write!(f, "Interracial"),
-            Category::Jocks => write!(f, "Jocks"),
-            Category::Latino => write!(f, "Latino"),
-            Category::Mature => write!(f, "Mature"),
-            Category::MediaPrograms => write!(f, "Media Programs"),
-            Category::Member => write!(f, "Member"),
-            Category::MiddleEastern => write!(f, "Middle Eastern"),
-            Category::Military => write!(f, "Military"),
-            Category::OralSex => write!(f, "Oral-Sex"),
-            Category::Softcore => write!(f, "Softcore"),
-            Category::Solo => write!(f, "Solo"),
-            Category::StraightOlder => write!(f, "Straight older"),
-            Category::StraightYounger => write!(f, "Straight younger"),
-            Category::ThemedMovie => write!(f, "Themed Movie"),
-            Category::Trans => write!(f, "Trans"),
-            Category::TvEpisodes => write!(f, "TV / Episodes"),
-            Category::Twinks => write!(f, "Twinks"),
-            Category::Vintage => write!(f, "Vintage"),
-            Category::Voyeur => write!(f, "Voyeur"),
-            Category::WrestlingAndSports => write!(f, "Wrestling & Sports"),
-            Category::Youngblood => write!(f, "Youngblood"),
-        }
-    }
 }
