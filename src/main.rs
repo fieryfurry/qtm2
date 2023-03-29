@@ -143,8 +143,6 @@ pub(crate) fn set_context(cc: &eframe::CreationContext<'_>, theme: QtmTheme) {
 #[derive(Debug)]
 struct DialogMessage(Cow<'static, str>, bool);
 
-const ICON: &[u8; 4755] = include_bytes!("../res/qtm2.svg");
-
 // TODO:
 //          Add CLI support
 //          Add networking/communication/authentication features
@@ -169,7 +167,7 @@ fn main() -> Result<()> {
     // Config init
     let config = QtmConfig::load(config_local_dir("config.toml"));
     let icon_data = Some(eframe::IconData {
-        rgba: ICON.to_vec(),
+        rgba: include_bytes!("../res/qtm2.svg").to_vec(),
         width: 512,
         height: 512,
     });
