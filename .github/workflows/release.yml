@@ -27,4 +27,4 @@ jobs:
         with:
           bin: qtm2
           token: ${{ secrets.GITHUB_TOKEN }}
-          include: README.md,LICENSE.md
+          include: ${{ matrix.os == 'ubuntu-latest' && 'README.md,LICENSE.md,res/install.sh,res/qtm2.desktop,res/qtm2.svg' || 'README.md,LICENSE.md'}}
