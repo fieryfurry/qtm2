@@ -34,7 +34,7 @@ mod torrent;
 mod unwrap_trace;
 
 fn proj_dirs() -> Result<ProjectDirs> {
-    ProjectDirs::from("", "", "quick-torrent-maker-2").ok_or(anyhow::Error::from(Error::new(
+    ProjectDirs::from("", "", "qtm2").ok_or(anyhow::Error::from(Error::new(
         ErrorKind::NotFound,
         "No valid home directory path found",
     )))
@@ -143,7 +143,7 @@ pub(crate) fn set_context(cc: &eframe::CreationContext<'_>, theme: QtmTheme) {
 #[derive(Debug)]
 struct DialogMessage(Cow<'static, str>, bool);
 
-const ICON: &[u8; 4755] = include_bytes!("../res/icon.svg");
+const ICON: &[u8; 4755] = include_bytes!("../res/qtm2.svg");
 
 // TODO:
 //          Add CLI support
