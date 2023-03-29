@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use eframe::egui;
 use eframe::egui::TextureHandle;
 use vcsr::args::Args;
-use vcsr::models::{MetadataPosition, TimestampPosition};
+use vcsr::models::{Grid, MetadataPosition, TimestampPosition};
 use walkdir::WalkDir;
 
 #[derive(Clone)]
@@ -37,71 +37,6 @@ impl PartialEq for Image {
 
 impl Eq for Image {}
 
-// Wrapper for vcsr `process_file` function
 pub(crate) fn generate_video_thumbnail_image<P: AsRef<Path>>(video_path: P) -> anyhow::Result<()> {
-    let mut args = Args {
-        num_groups: None,
-        num_selected: None,
-        accurate: false,
-        accurate_delay_seconds: 0.0,
-        actual_size: false,
-        background_colour: "".to_string(),
-        capture_alpha: 0,
-        delay_percent: None,
-        end_delay_percent: 0.0,
-        exclude_extensions: vec![],
-        fast: false,
-        frame_type: None,
-        filenames: vec![],
-        grid: Default::default(),
-        grid_spacing: None,
-        grid_horizontal_spacing: 0,
-        grid_vertical_spacing: 0,
-        image_format: "".to_string(),
-        ignore_errors: false,
-        interval: None,
-        manual_timestamps: vec![],
-        metadata_background_colour: "".to_string(),
-        metadata_font: None,
-        metadata_font_colour: "".to_string(),
-        metadata_font_size: 0.0,
-        metadata_horizontal_margin: 0,
-        metadata_margin: 0,
-        metadata_position: MetadataPosition::Top,
-        metadata_vertical_margin: 0,
-        no_overwrite: false,
-        output_path: None,
-        recursive: false,
-        num_samples: None,
-        no_shadow: false,
-        start_delay_percent: 0.0,
-        show_timestamp: false,
-        thumbnail_output_path: None,
-        timestamp_background_colour: "".to_string(),
-        timestamp_border_colour: "".to_string(),
-        timestamp_border_mode: false,
-        timestamp_border_radius: 0.0,
-        timestamp_border_size: 0,
-        timestamp_font: None,
-        timestamp_font_colour: "".to_string(),
-        timestamp_font_size: 0.0,
-        timestamp_position: TimestampPosition::North,
-        timestamp_horizontal_margin: 0,
-        timestamp_horizontal_padding: 0,
-        timestamp_vertical_margin: 0,
-        timestamp_vertical_padding: 0,
-        vcs_width: 0,
-        verbose: false,
-    };
-    match vcsr::process_file(
-        &WalkDir::new(video_path.as_ref())
-            .into_iter()
-            .next()
-            .unwrap()
-            .unwrap(),
-        &mut args,
-    ) {
-        Ok(_) => Ok(()),
-        Err(err) => Err(anyhow::Error::new(err)),
-    }
+    todo!()
 }
