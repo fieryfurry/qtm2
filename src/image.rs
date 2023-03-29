@@ -4,9 +4,6 @@ use std::path::{Path, PathBuf};
 
 use eframe::egui;
 use eframe::egui::TextureHandle;
-use vcsr::args::Args;
-use vcsr::models::{Grid, MetadataPosition, TimestampPosition};
-use walkdir::WalkDir;
 
 #[derive(Clone)]
 pub(crate) struct Image {
