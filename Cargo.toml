@@ -1,6 +1,6 @@
 [package]
 name = "qtm2"
-version = "0.1.9"
+version = "0.1.10"
 authors = ["Fiery Furry <fiery.furry@proton.me>"]
 edition = "2021"
 description = "Quick Torrent Maker 2"
