@@ -11,9 +11,9 @@ use std::rc::Rc;
 
 use anyhow::Result;
 use directories::ProjectDirs;
-use eframe::egui::{Color32, FontData, FontDefinitions, FontId, Pos2, Style, vec2, Visuals};
-use eframe::egui::{FontFamily, Margin, Rounding};
 use eframe::egui::TextStyle::*;
+use eframe::egui::{vec2, Color32, FontData, FontDefinitions, FontId, Pos2, Style, Visuals};
+use eframe::egui::{FontFamily, Margin, Rounding};
 use tracing::{error, info, Level};
 
 use crate::image::Image;
@@ -87,7 +87,7 @@ fn get_style_by_theme(theme: QtmTheme) -> Style {
             (Button, FontId::new(18.0, FontFamily::Proportional)),
             (Small, FontId::new(14.0, FontFamily::Proportional)),
         ]
-            .into(),
+        .into(),
         ..Default::default()
     };
     style.spacing.window_margin = Margin::same(20.0);
@@ -143,6 +143,8 @@ pub(crate) fn set_context(cc: &eframe::CreationContext<'_>, theme: QtmTheme) {
 #[derive(Debug)]
 struct DialogMessage(Cow<'static, str>, bool);
 
+const ICON: &[u8; 4755] = include_bytes!("../res/icon.svg");
+
 // TODO:
 //          Add CLI support
 //          Add networking/communication/authentication features
@@ -166,6 +168,11 @@ fn main() -> Result<()> {
 
     // Config init
     let config = QtmConfig::load(config_local_dir("config.toml"));
+    let icon_data = Some(eframe::IconData {
+        rgba: ICON.to_vec(),
+        width: 512,
+        height: 512,
+    });
     let is_authenticated = Rc::new(Cell::new(false));
     let is_authenticated_clone = is_authenticated.clone();
 
@@ -184,6 +191,7 @@ fn main() -> Result<()> {
             initial_window_pos: Some(Pos2::new(400., 400.)),
             initial_window_size: Some(vec2(400., 150.)),
             resizable: false,
+            icon_data: icon_data.clone(),
             ..Default::default()
         },
         Box::new(move |cc| {
@@ -195,13 +203,13 @@ fn main() -> Result<()> {
             ))
         }),
     )
-        .map_err(|err| {
-            error!(
+    .map_err(|err| {
+        error!(
             ?err,
             "QTM2 failed to set up a graphics context for password prompt"
         );
-            anyhow::Error::msg(err.to_string())
-        })?;
+        anyhow::Error::msg(err.to_string())
+    })?;
 
     if !is_authenticated.get() {
         info!("Not authenticated; exiting");
@@ -218,12 +226,13 @@ fn main() -> Result<()> {
                 config.initial_window_size.0 as f32,
                 config.initial_window_size.1 as f32,
             )),
+            icon_data,
             ..Default::default()
         },
         Box::new(|cc| Box::new(Qtm::new(cc, config))),
     )
-        .map_err(|err| {
-            error!(?err, "QTM2 failed to set up a graphics context");
-            anyhow::Error::msg(err.to_string())
-        })
+    .map_err(|err| {
+        error!(?err, "QTM2 failed to set up a graphics context");
+        anyhow::Error::msg(err.to_string())
+    })
 }
