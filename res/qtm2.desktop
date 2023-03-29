@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Quick Torrent Maker 2
 Comment=QTM2 Upload Content to GT
-Exec=/usr/local/bin/qtm2
+Exec=qtm2
 Icon=qtm2
 Terminal=false
 Type=Application
