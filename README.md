@@ -27,13 +27,14 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [x] Image preview
 - [x] UI Customisation
 - [x] Password prompt
+- [x] Desktop Icon
 
 ### Priority:
 - [ ] Networking
 - [ ] uTorrent/qBittorrent integration
 
 ### Future:
-- [ ] install.sh shell script
+- [ ] Makefile
 - [ ] Video thumbnail generator
 - [ ] CLI support
 
