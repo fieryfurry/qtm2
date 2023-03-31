@@ -32,6 +32,7 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [x] UI Customisation
 - [x] Password prompt
 - [x] Desktop Icon
+- [x] install.sh script (Linux)
 
 ### Priority:
 - [ ] Networking
