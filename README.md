@@ -6,6 +6,10 @@
 [![License](https://img.shields.io/badge/license-BSD--2--Clause%20Plus%20Patent-green)](https://spdx.org/licenses/BSD-2-Clause-Patent.html)
 ![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
 
+<p align="center">
+<img alt="qtm2 icon" width="128" height="128" src="res/qtm2.svg">
+</p>
+
 QTM2 is a cross-platform application that aims to integrate creating and uploading torrents to [GayTorrent](https://www.gaytor.rent/), in order to produce more quality and descriptive contents easier from most modern operating system platforms (Windows / macOS / Linux). It is written in **Rust**, a fast and memory-safe general purpose programming language, using egui and other library crates as well as fonts that may be found in the [Cargo.toml](Cargo.toml) and [LICENSE.md](LICENSE.md) files.
 
 This is a project that is undergoing active development, so bugs are possible. Please report any in the [Issues](https://github.com/fieryfurry/qtm2/issues) section with detailed descriptions of your system configuration and steps to reproduce the bug. You may also suggest new features there to be added to the roadmap section below. 
@@ -34,7 +38,7 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [ ] uTorrent/qBittorrent integration
 
 ### Future:
-- [ ] Makefile
+- [ ] Tags
 - [ ] Video thumbnail generator
 - [ ] CLI support
 

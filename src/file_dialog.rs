@@ -12,7 +12,7 @@ use crate::DialogMessage;
 
 use super::Image;
 
-pub(crate) trait Pred {
+pub trait Pred {
     fn pred<F1, F2, P, T>(self, predicate: P, true_fn: F1, false_fn: F2) -> T
     where
         P: FnOnce(&Self) -> bool,
@@ -42,7 +42,7 @@ fn create_file_dialog<P: AsRef<Path> + Clone>(default_directory: Option<P>) -> F
     )
 }
 
-pub(crate) fn select_content<P: AsRef<Path> + Clone>(
+pub fn select_content<P: AsRef<Path> + Clone>(
     is_file: bool,
     default_directory: Option<P>,
 ) -> Option<(PathBuf, String, u64)> {
@@ -60,7 +60,7 @@ pub(crate) fn select_content<P: AsRef<Path> + Clone>(
 // TODO: Add all supported file extensions
 pub(crate) fn select_images<P: AsRef<Path> + Clone>(
     default_directory: Option<P>,
-    current_images: &Vec<Image>,
+    current_images: &[Image],
     sender: &mpsc::Sender<DialogMessage>,
     ui: &mut Ui,
 ) -> Option<Vec<Image>> {

@@ -170,7 +170,7 @@ pub struct Table {
     id: Id,
 }
 
-pub(crate) const SENSE_NONE: Sense = Sense {
+pub const SENSE_NONE: Sense = Sense {
     click: false,
     drag: false,
     focusable: false,

@@ -3,7 +3,7 @@
 use strum_macros::{Display, EnumIter, EnumString};
 
 #[derive(EnumIter, EnumString, Display, Debug, Copy, Clone, Eq, PartialEq)]
-pub(crate) enum Category {
+pub enum Category {
     #[strum(serialize = "Select Category")]
     None,
     #[strum(serialize = "Amateur")]

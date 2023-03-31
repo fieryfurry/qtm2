@@ -12,18 +12,18 @@ use crate::file_dialog::Pred;
 impl Pred for ClientBuilder {}
 
 #[derive(Debug)]
-pub(crate) struct QtmNetworking {
-    pub(crate) client: Client,
+pub struct QtmNetworking {
+    pub client: Client,
 }
 
 impl QtmNetworking {
-    pub(crate) fn try_new() -> anyhow::Result<Self> {
+    pub fn try_new() -> anyhow::Result<Self> {
         Ok(Self {
             client: Self::get_client()?,
         })
     }
 
-    pub(crate) fn login(&self, username: &str, password: &str) -> bool {
+    pub fn login(&self, username: &str, password: &str) -> bool {
         let boundary = Self::generate_boundary();
         let form = Self::get_login_form(username, password, &boundary);
         let request = self

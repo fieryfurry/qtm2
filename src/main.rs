@@ -32,6 +32,7 @@ mod qtm_networking;
 mod selectable_table;
 mod torrent;
 mod unwrap_trace;
+mod tag;
 
 fn proj_dirs() -> Result<ProjectDirs> {
     ProjectDirs::from("", "", "qtm2").ok_or(anyhow::Error::from(Error::new(
@@ -82,9 +83,9 @@ fn get_style_by_theme(theme: QtmTheme) -> Style {
     let mut style = Style {
         text_styles: [
             (Heading, FontId::new(30.0, FontFamily::Proportional)),
-            (Body, FontId::new(18.0, FontFamily::Proportional)),
+            (Body, FontId::new(16.0, FontFamily::Proportional)),
             (Monospace, FontId::new(14.0, FontFamily::Monospace)),
-            (Button, FontId::new(18.0, FontFamily::Proportional)),
+            (Button, FontId::new(16.0, FontFamily::Proportional)),
             (Small, FontId::new(14.0, FontFamily::Proportional)),
         ]
         .into(),
@@ -107,7 +108,7 @@ fn get_style_by_theme(theme: QtmTheme) -> Style {
     style
 }
 
-pub(crate) fn set_context(cc: &eframe::CreationContext<'_>, theme: QtmTheme) {
+pub fn set_context(cc: &eframe::CreationContext<'_>, theme: QtmTheme) {
     // Style
     let style = get_style_by_theme(theme);
 
@@ -179,39 +180,42 @@ fn main() -> Result<()> {
     let networking_clone = networking.clone();
     info!("Started networking");
 
-    // Egui init
-    eframe::run_native(
-        &format!(
-            "Quick Torrent Maker 2 v{}",
-            QtmVersion::get_current_version()
-        ),
-        eframe::NativeOptions {
-            initial_window_pos: Some(Pos2::new(400., 400.)),
-            initial_window_size: Some(vec2(400., 150.)),
-            resizable: false,
-            icon_data: icon_data.clone(),
-            ..Default::default()
-        },
-        Box::new(move |cc| {
-            Box::new(PasswordPrompt::new(
-                cc,
-                config.theme,
-                is_authenticated_clone,
-                networking_clone,
-            ))
-        }),
-    )
-    .map_err(|err| {
-        error!(
+    #[cfg(not(debug_assertions))]
+    {
+        // Egui init
+        eframe::run_native(
+            &format!(
+                "Quick Torrent Maker 2 v{}",
+                QtmVersion::get_current_version()
+            ),
+            eframe::NativeOptions {
+                initial_window_pos: Some(Pos2::new(400., 400.)),
+                initial_window_size: Some(vec2(400., 150.)),
+                resizable: false,
+                icon_data: icon_data.clone(),
+                ..Default::default()
+            },
+            Box::new(move |cc| {
+                Box::new(PasswordPrompt::new(
+                    cc,
+                    config.theme,
+                    is_authenticated_clone,
+                    networking_clone,
+                ))
+            }),
+        )
+            .map_err(|err| {
+                error!(
             ?err,
             "QTM2 failed to set up a graphics context for password prompt"
         );
-        anyhow::Error::msg(err.to_string())
-    })?;
+                anyhow::Error::msg(err.to_string())
+            })?;
 
-    if !is_authenticated.get() {
-        info!("Not authenticated; exiting");
-        return Ok(());
+        if !is_authenticated.get() {
+            info!("Not authenticated; exiting");
+            return Ok(());
+        }
     }
 
     eframe::run_native(

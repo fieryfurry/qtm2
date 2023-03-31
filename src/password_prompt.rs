@@ -12,15 +12,15 @@ use crate::qtm_networking::QtmNetworking;
 use crate::set_context;
 
 #[derive(Debug)]
-pub(crate) struct PasswordPrompt {
-    pub(crate) username: String,
-    pub(crate) password: String,
-    pub(crate) is_authenticated: Rc<Cell<bool>>,
-    pub(crate) networking: Rc<QtmNetworking>,
+pub struct PasswordPrompt {
+    pub username: String,
+    pub password: String,
+    pub is_authenticated: Rc<Cell<bool>>,
+    pub networking: Rc<QtmNetworking>,
 }
 
 impl PasswordPrompt {
-    pub(crate) fn new(
+    pub fn new(
         cc: &eframe::CreationContext<'_>,
         theme: QtmTheme,
         is_authenticated: Rc<Cell<bool>>,

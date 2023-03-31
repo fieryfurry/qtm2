@@ -11,12 +11,12 @@ use strum_macros::Display;
 use tracing::{info, warn};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct QtmConfig {
-    pub(crate) version: QtmVersion,
-    pub(crate) theme: QtmTheme,
-    pub(crate) default_directory: Option<PathBuf>,
-    pub(crate) initial_window_size: (usize, usize),
-    pub(crate) image_area: usize,
+pub struct QtmConfig {
+    pub version: QtmVersion,
+    pub theme: QtmTheme,
+    pub default_directory: Option<PathBuf>,
+    pub initial_window_size: (usize, usize),
+    pub image_area: usize,
 }
 
 impl Default for QtmConfig {
@@ -25,14 +25,14 @@ impl Default for QtmConfig {
             version: QtmVersion::get_current_version(),
             theme: QtmTheme::Light,
             default_directory: None,
-            initial_window_size: (800, 800),
+            initial_window_size: (800, 700),
             image_area: 120_000,
         }
     }
 }
 
 impl QtmConfig {
-    pub(crate) fn load<P: AsRef<Path>>(path: P) -> Self {
+    pub fn load<P: AsRef<Path>>(path: P) -> Self {
         let file_content = match fs::read_to_string(path.as_ref()) {
             Ok(string) => string,
             Err(err) => {
@@ -57,7 +57,7 @@ impl QtmConfig {
     }
 
     //  TODO: Add auto. log clean-up function
-    pub(crate) fn save<P: AsRef<Path>>(&self, path: P) {
+    pub fn save<P: AsRef<Path>>(&self, path: P) {
         let Ok(config) = toml::to_string(self) else {
             warn!(?self, "Unable to serialise or hence save the configuration; saving aborted");
             return;
@@ -74,7 +74,7 @@ impl QtmConfig {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Display)]
-pub(crate) enum QtmTheme {
+pub enum QtmTheme {
     Light,
     Dark,
 }
@@ -91,10 +91,10 @@ impl Neg for QtmTheme {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct QtmVersion(u8, u8, u8);
+pub struct QtmVersion(u8, u8, u8);
 
 impl QtmVersion {
-    pub(crate) fn get_current_version() -> Self {
+    pub fn get_current_version() -> Self {
         Self(
             env!("CARGO_PKG_VERSION_MAJOR").parse::<u8>().unwrap(),
             env!("CARGO_PKG_VERSION_MINOR").parse::<u8>().unwrap(),
