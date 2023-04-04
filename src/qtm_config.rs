@@ -53,7 +53,6 @@ impl QtmConfig {
                 QtmConfig::default()
             }
         }
-
     }
 
     //  TODO: Add auto. log clean-up function

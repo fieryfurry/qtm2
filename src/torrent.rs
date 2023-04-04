@@ -11,7 +11,7 @@ use tracing::{info, warn};
 use walkdir::WalkDir;
 
 use crate::qtm_config::QtmVersion;
-use crate::{cache_dir, DialogMessage};
+use crate::{data_local_dir, DialogMessage};
 
 fn get_total_length<P: AsRef<Path>>(path: P) -> u64 {
     if path.as_ref().is_file() {
@@ -89,7 +89,7 @@ pub(crate) fn create_torrent_file<P: AsRef<Path>>(
         Ok(torrent) => {
             let filename = &format!("qtm2-{}.torrent", creation_time);
             info!("{filename} has been created successfully");
-            match torrent.write_into_file(cache_dir(filename)) {
+            match torrent.write_into_file(data_local_dir(filename)) {
                 Ok(_) => {
                     sender
                         .send(DialogMessage(

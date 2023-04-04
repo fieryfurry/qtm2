@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause-Patent
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -9,7 +10,8 @@ use std::sync::mpsc::TryRecvError;
 use bytesize::ByteSize;
 use eframe::egui;
 use eframe::egui::{
-    Align, Context, Frame, Grid, Id, Layout, Rounding, ScrollArea, show_tooltip, vec2, widgets,
+    Align, Context, Frame, Grid, Id, Layout, Margin, Rounding, ScrollArea, show_tooltip, vec2,
+    widgets,
 };
 use eframe::egui::TextStyle::Monospace;
 use strum::IntoEnumIterator;
@@ -24,7 +26,7 @@ use crate::file_dialog::select_content;
 use crate::image::Image;
 use crate::qtm_config::{QtmConfig, QtmTheme};
 use crate::selectable_table::{Column, TableBuilder};
-use crate::tag::{Tag, TagColor};
+use crate::tag::{Tag, TagColor, TagData};
 use crate::torrent::create_torrent_file;
 
 pub struct Qtm {
@@ -43,6 +45,9 @@ pub struct Qtm {
 
     title: String,
     description: String,
+
+    tags: Vec<TagData>,
+    is_tag_menu_open: bool,
 }
 
 impl Qtm {
@@ -50,7 +55,7 @@ impl Qtm {
         info!("Started Main Application");
 
         set_context(cc, config.theme);
-
+        
         Self {
             config,
             dialog: None,
@@ -62,6 +67,8 @@ impl Qtm {
             selected_index: None,
             title: "".to_owned(),
             description: "".to_owned(),
+            tags: Vec::new(),
+            is_tag_menu_open: false,
         }
     }
 
@@ -444,12 +451,40 @@ impl eframe::App for Qtm {
                         // Tags
                         ui.with_layout(Layout::left_to_right(Align::TOP).with_main_wrap(true),
                                        |ui| {
-                                           if ui.add(Tag::new("➕".to_owned(),
+                                           if ui.add(Tag::new("➕",
                                                               TagColor::Wetasphalt,
-                                                              true)).clicked() {
-                                               dbg!("new tag!");
+                                                              &mut Some(self.is_tag_menu_open))).clicked() {
+                                               self.is_tag_menu_open = !self.is_tag_menu_open;
                                            }
                                        });
+
+                        if self.is_tag_menu_open {
+                            egui::Window::new("tags")
+                                .frame(Frame::window(&ctx.style())
+                                    .rounding(Rounding::same(10.))
+                                    .inner_margin(Margin::same(10.))
+                                )
+                                .fixed_size(vec2(400., 200.))
+                                .default_pos(ctx.pointer_latest_pos().unwrap_or_default())
+                                .title_bar(false)
+                                .drag_bounds(ctx.screen_rect())
+                                .show(ctx, |ui| {
+                                    ui.with_layout(Layout::left_to_right(Align::TOP).with_main_wrap(true), |ui| {
+                                        ui.style_mut().spacing.item_spacing = vec2(10., 10.);
+                                        for tag_data in self.tags.iter_mut() {
+                                            ui.add(Tag::from(tag_data));
+                                        }
+                                    });
+                                    ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
+                                        if ui
+                                            .add_sized(vec2(100., 20.), widgets::Button::new("OK").rounding(Rounding::same(10.)))
+                                            .clicked() {
+                                            self.is_tag_menu_open = false;
+                                        }
+                                    });
+                                    ui.allocate_space(ui.available_size());
+                                });
+                        }
 
                         // Uploading rules
                         let rule_url = "https://www.gaytor.rent/rules.php#102";
@@ -461,6 +496,8 @@ impl eframe::App for Qtm {
                                 }
                             }
                         });
+
+                        ui.add_space(10.);
                     });
             });
     }

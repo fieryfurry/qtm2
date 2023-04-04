@@ -21,6 +21,7 @@ use crate::password_prompt::PasswordPrompt;
 use crate::qtm::Qtm;
 use crate::qtm_config::{QtmConfig, QtmTheme, QtmVersion};
 use crate::qtm_networking::QtmNetworking;
+use crate::tag::TagData;
 
 mod category;
 mod file_dialog;
@@ -91,7 +92,12 @@ fn get_style_by_theme(theme: QtmTheme) -> Style {
         .into(),
         ..Default::default()
     };
-    style.spacing.window_margin = Margin::same(20.0);
+    style.spacing.window_margin = Margin {
+        left: 20.,
+        right: 0.,
+        top: 20.,
+        bottom: 0.,
+    };
     if theme == QtmTheme::Light {
         style.visuals = Visuals::light();
         style.visuals.window_fill = Color32::LIGHT_GRAY;
@@ -154,7 +160,7 @@ fn main() -> Result<()> {
     initialise_dirs()?;
 
     // Tracing init
-    let file_appender = tracing_appender::rolling::daily(data_local_dir(""), "qtm2.log");
+    let file_appender = tracing_appender::rolling::daily(cache_dir(""), "qtm2.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
     let subscriber = tracing_subscriber::fmt()
         .with_writer(non_blocking)
@@ -172,6 +178,7 @@ fn main() -> Result<()> {
         width: 512,
         height: 512,
     });
+    TagData::init_data(cache_dir("tags.json"));
     let is_authenticated = Rc::new(Cell::new(false));
     let is_authenticated_clone = is_authenticated.clone();
 
