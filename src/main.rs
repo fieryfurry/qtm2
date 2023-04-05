@@ -31,9 +31,9 @@ mod qtm;
 mod qtm_config;
 mod qtm_networking;
 mod selectable_table;
+mod tag;
 mod torrent;
 mod unwrap_trace;
-mod tag;
 
 fn proj_dirs() -> Result<ProjectDirs> {
     ProjectDirs::from("", "", "qtm2").ok_or(anyhow::Error::from(Error::new(
@@ -135,12 +135,12 @@ pub fn set_context(cc: &eframe::CreationContext<'_>, theme: QtmTheme) {
         .families
         .get_mut(&FontFamily::Proportional)
         .unwrap()
-        .insert(0, "inter".to_owned());
+        .push("inter".to_owned());
     fonts
         .families
         .get_mut(&FontFamily::Monospace)
         .unwrap()
-        .insert(0, "source-code-pro".to_owned());
+        .push("source-code-pro".to_owned());
 
     cc.egui_ctx.set_style(style);
     cc.egui_ctx.set_fonts(fonts);
@@ -178,7 +178,10 @@ fn main() -> Result<()> {
         width: 512,
         height: 512,
     });
-    TagData::init_data(cache_dir("tags.json"));
+    // Tags init
+    TagData::_init_data(cache_dir("tags.json"));
+    let tags = TagData::fetch_data(cache_dir("tags.json"));
+
     let is_authenticated = Rc::new(Cell::new(false));
     let is_authenticated_clone = is_authenticated.clone();
 
@@ -211,13 +214,13 @@ fn main() -> Result<()> {
                 ))
             }),
         )
-            .map_err(|err| {
-                error!(
-            ?err,
-            "QTM2 failed to set up a graphics context for password prompt"
-        );
-                anyhow::Error::msg(err.to_string())
-            })?;
+        .map_err(|err| {
+            error!(
+                ?err,
+                "QTM2 failed to set up a graphics context for password prompt"
+            );
+            anyhow::Error::msg(err.to_string())
+        })?;
 
         if !is_authenticated.get() {
             info!("Not authenticated; exiting");
@@ -238,7 +241,7 @@ fn main() -> Result<()> {
             icon_data,
             ..Default::default()
         },
-        Box::new(|cc| Box::new(Qtm::new(cc, config))),
+        Box::new(|cc| Box::new(Qtm::new(cc, config, tags))),
     )
     .map_err(|err| {
         error!(?err, "QTM2 failed to set up a graphics context");
