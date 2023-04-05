@@ -34,12 +34,14 @@ Please also note that the binary and its data structures are referred to as `qtm
 - [x] Desktop Icon
 - [x] install.sh script (Linux)
 
-### Priority:
+### Work In Progress:
 - [ ] Networking
+- [ ] Tags
+
+### Priority:
 - [ ] uTorrent/qBittorrent integration
 
 ### Future:
-- [ ] Tags
 - [ ] Video thumbnail generator
 - [ ] CLI support
 
@@ -74,7 +76,7 @@ Note: clearing the cache will also delete all logs, as well as the configuration
 
 ## Special Thanks
 - [mitmproxy](https://mitmproxy.org/): a free and open source interactive HTTPS proxy
-
+- [Material UI](https://materialui.co/): Material Design Color, Flat Colors, Icons, Color Palette by 7Span   
 
 ## License
 QTM2 is licensed under the [BSD-2-Clause Plus Patent License](https://spdx.org/licenses/BSD-2-Clause-Patent.html). 
