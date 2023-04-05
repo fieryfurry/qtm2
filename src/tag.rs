@@ -5,7 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use eframe::egui::{
-    Button, Color32, FontFamily, FontId, Response, RichText, Rounding, Stroke, TextStyle, Ui, vec2,
+    Button, Color32, FontId, Response, RichText, Rounding, Stroke, TextStyle, Ui, vec2,
     Widget,
 };
 use serde::{Deserialize, Serialize};
@@ -14,45 +14,64 @@ use tracing::{info, warn};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
+// https://materialui.co/colors Material UI
 pub enum TagColor {
-    Cyan,
-    Green,
-    Blue,
-    Purple,
-    DarkGray,
-    Yellow,
-    Orange,
     Red,
-    LightGray,
-    Gray,
+    Pink,
+    Purple,
+    DeepPurple,
+    Indigo,
+    Blue,
+    LightBlue,
+    Cyan,
+    Teal,
+    Green,
+    LightGreen,
+    Lime,
+    Yellow,
+    Amber,
+    Orange,
+    DeepOrange,
+    Brown,
+    Grey,
+    BlueGrey,
 }
 
 impl TagColor {
     pub const fn to_primary_color(self) -> Color32 {
         match self {
-            TagColor::Cyan => Color32::from_rgb(26, 188, 156),
-            TagColor::Green => Color32::from_rgb(46, 204, 113),
-            TagColor::Blue => Color32::from_rgb(52, 152, 219),
-            TagColor::Purple => Color32::from_rgb(155, 89, 182),
-            TagColor::DarkGray => Color32::from_rgb(52, 73, 94),
-            TagColor::Yellow => Color32::from_rgb(241, 196, 15),
-            TagColor::Orange => Color32::from_rgb(230, 126, 34),
-            TagColor::Red => Color32::from_rgb(231, 76, 60),
-            TagColor::LightGray => Color32::from_rgb(236, 240, 241),
-            TagColor::Gray => Color32::from_rgb(149, 165, 166),
+            TagColor::Red => Color32::from_rgb(244, 67, 54),
+            TagColor::Pink => Color32::from_rgb(233, 30, 99),
+            TagColor::Purple => Color32::from_rgb(156, 39, 176),
+            TagColor::DeepPurple => Color32::from_rgb(103, 58, 183),
+            TagColor::Indigo => Color32::from_rgb(63, 81, 181),
+            TagColor::Blue => Color32::from_rgb(33, 150, 243),
+            TagColor::LightBlue => Color32::from_rgb(3, 169, 244),
+            TagColor::Cyan => Color32::from_rgb(0, 188, 212),
+            TagColor::Teal => Color32::from_rgb(0, 150, 136),
+            TagColor::Green => Color32::from_rgb(76, 175, 80),
+            TagColor::LightGreen => Color32::from_rgb(139, 195, 74),
+            TagColor::Lime => Color32::from_rgb(205, 220, 57),
+            TagColor::Yellow => Color32::from_rgb(255, 235, 59),
+            TagColor::Amber => Color32::from_rgb(255, 193, 7),
+            TagColor::Orange => Color32::from_rgb(255, 152, 0),
+            TagColor::DeepOrange => Color32::from_rgb(255, 87, 34),
+            TagColor::Brown => Color32::from_rgb(121, 85, 72),
+            TagColor::Grey => Color32::from_rgb(117, 117, 117),
+            TagColor::BlueGrey => Color32::from_rgb(96, 125, 139),
         }
     }
 
     pub const fn to_secondary_color(self) -> Color32 {
         match self {
-            TagColor::Blue | TagColor::Purple | TagColor::DarkGray => Color32::WHITE,
+            TagColor::Purple |
+            TagColor::DeepPurple |
+            TagColor::Indigo |
+            TagColor::Brown
+            => Color32::WHITE,
             _ => Color32::BLACK,
         }
     }
-}
-
-fn default_selected() -> Option<bool> {
-    Some(false)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -75,7 +94,6 @@ impl PartialOrd for TagData {
 
 impl TagData {
     pub fn _init_data<P: AsRef<Path>>(path: P) {
-        // ONLY TEMPORARY
         let tags = vec![
             TagData {
                 text: "Onlyfans".to_owned(),
@@ -83,15 +101,15 @@ impl TagData {
             },
             TagData {
                 text: "Fansly".to_owned(),
-                color: TagColor::Cyan,
+                color: TagColor::Blue,
             },
             TagData {
                 text: "JustForFans".to_owned(),
-                color: TagColor::Red,
+                color: TagColor::Pink,
             },
             TagData {
                 text: "Friends 2 Follow".to_owned(),
-                color: TagColor::Purple,
+                color: TagColor::DeepPurple,
             },
             TagData {
                 text: "Pornhub".to_owned(),
@@ -99,7 +117,7 @@ impl TagData {
             },
             TagData {
                 text: "Chaturbate".to_owned(),
-                color: TagColor::Yellow,
+                color: TagColor::Amber,
             },
             TagData {
                 text: "Twitter".to_owned(),
@@ -107,7 +125,23 @@ impl TagData {
             },
             TagData {
                 text: "Reddit".to_owned(),
-                color: TagColor::Orange,
+                color: TagColor::DeepOrange,
+            },
+            TagData {
+                text: "Amateur".to_owned(),
+                color: TagColor::Lime,
+            },
+            TagData {
+                text: "Snapchat".to_owned(),
+                color: TagColor::Yellow,
+            },
+            TagData {
+                text: "Tiktok".to_owned(),
+                color: TagColor::Cyan,
+            },
+            TagData {
+                text: "Instagram".to_owned(),
+                color: TagColor::Pink,
             },
         ];
         fs::write(path, serde_json::to_string(&tags).unwrap()).unwrap();
@@ -136,6 +170,7 @@ impl TagData {
         }
     }
 
+    // TODO: Add custom tags generation/fetching/saving
     pub fn fetch_custom() -> Vec<Self> {
         todo!()
     }

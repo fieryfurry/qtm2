@@ -189,27 +189,35 @@ impl eframe::App for Qtm {
             .exact_height(40.)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.set_enabled(
-                        self.dialog.is_none() && !self.is_tag_menu_open && self.is_acceptable(),
-                    );
-                    if ui
-                        .add_sized(vec2(150., 20.), widgets::Button::new("Upload torrent"))
-                        .clicked()
-                    {
-                        info!("Begin torrent upload");
-                        self.dialog_channel
-                            .0
-                            .send(DialogMessage(
-                                Cow::Borrowed("Creating torrent...\n\nThis may take a while..."),
-                                false,
-                            ))
-                            .unwrap();
+                    ui.add_enabled_ui(self.dialog.is_none() && !self.is_tag_menu_open && self.is_acceptable(), |ui| {
+                        if ui
+                            .add_sized(vec2(150., 20.), widgets::Button::new("Upload torrent"))
+                            .clicked()
+                        {
+                            info!("Begin torrent upload");
+                            self.dialog_channel
+                                .0
+                                .send(DialogMessage(
+                                    Cow::Borrowed("Creating torrent...\n\nThis may take a while..."),
+                                    false,
+                                ))
+                                .unwrap();
 
-                        let content_path = self.content.clone().unwrap().0;
-                        let sender = self.dialog_channel.0.clone();
-                        std::thread::spawn(|| {
-                            create_torrent_file(content_path, sender);
-                        });
+                            let content_path = self.content.clone().unwrap().0;
+                            let sender = self.dialog_channel.0.clone();
+                            std::thread::spawn(|| {
+                                create_torrent_file(content_path, sender);
+                            });
+                        }
+                    });
+
+                    // Uploading rules
+                    ui.add_space(10.);
+                    let rule_url = "https://www.gaytor.rent/rules.php#102";
+                    if ui.hyperlink_to("Uploading Rules", rule_url).clicked() {
+                        if let Err(err) = open::that(rule_url) {
+                            warn!(?err, "Failed to open uploading rules link: {rule_url}");
+                        }
                     }
                 });
             });
@@ -467,56 +475,43 @@ impl eframe::App for Qtm {
 
                                                    if ui.add(Tag::new(&TagData {
                                                        text: "➕".to_owned(),
-                                                       color: TagColor::DarkGray,
+                                                       color: TagColor::BlueGrey,
                                                    }, &mut self.is_tag_menu_open)).clicked() {
                                                        self.is_tag_menu_open = !self.is_tag_menu_open;
                                                    }
                                                });
                             });
-
-                        // Uploading rules
-                        let rule_url = "https://www.gaytor.rent/rules.php#102";
-                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                            ui.add_space(5.);
-                            if ui.hyperlink_to("Uploading Rules", rule_url).clicked() {
-                                if let Err(err) = open::that(rule_url) {
-                                    warn!(?err, "Failed to open uploading rules link: {rule_url}");
-                                }
-                            }
-                        });
-
-                        ui.add_space(10.);
-
-                        if self.is_tag_menu_open {
-                            egui::Window::new("tags")
-                                .frame(Frame::window(&ctx.style())
-                                    .rounding(Rounding::same(10.))
-                                    .inner_margin(Margin::same(10.))
-                                )
-                                .fixed_size(vec2(400., 200.))
-                                .default_pos(ctx.pointer_latest_pos().unwrap_or_default())
-                                .title_bar(false)
-                                .drag_bounds(ctx.screen_rect())
-                                .show(ctx, |ui| {
-                                    ui.with_layout(Layout::left_to_right(Align::TOP).with_main_wrap(true), |ui| {
-                                        ui.style_mut().spacing.item_spacing = vec2(10., 10.);
-                                        for mut tag_state in self.tags.iter_mut() {
-                                            if ui.add(Tag::from(&mut tag_state)).clicked() {
-                                                *tag_state.1 = !*tag_state.1;
-                                            }
-                                        }
-                                    });
-                                    ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
-                                        if ui
-                                            .add_sized(vec2(100., 20.), widgets::Button::new("OK").rounding(Rounding::same(10.)))
-                                            .clicked() {
-                                            self.is_tag_menu_open = false;
-                                        }
-                                    });
-                                    ui.allocate_space(ui.available_size());
-                                });
-                        }
+                        ui.add_space(20.);
                     });
             });
+        if self.is_tag_menu_open {
+            egui::Window::new("tags")
+                .frame(Frame::window(&ctx.style())
+                    .rounding(Rounding::same(10.))
+                    .inner_margin(Margin::same(10.))
+                )
+                .fixed_size(vec2(400., 200.))
+                .default_pos(ctx.pointer_latest_pos().unwrap_or_default())
+                .title_bar(false)
+                .drag_bounds(ctx.screen_rect())
+                .show(ctx, |ui| {
+                    ui.with_layout(Layout::left_to_right(Align::TOP).with_main_wrap(true), |ui| {
+                        ui.style_mut().spacing.item_spacing = vec2(10., 10.);
+                        for mut tag_state in self.tags.iter_mut() {
+                            if ui.add(Tag::from(&mut tag_state)).clicked() {
+                                *tag_state.1 = !*tag_state.1;
+                            }
+                        }
+                    });
+                    ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
+                        if ui
+                            .add_sized(vec2(100., 20.), widgets::Button::new("OK").rounding(Rounding::same(10.)))
+                            .clicked() {
+                            self.is_tag_menu_open = false;
+                        }
+                    });
+                    ui.allocate_space(ui.available_size());
+                });
+        }
     }
 }
