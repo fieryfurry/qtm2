@@ -10,10 +10,9 @@ use std::sync::mpsc::TryRecvError;
 use bytesize::ByteSize;
 use eframe::egui;
 use eframe::egui::{
-    Align, Context, Frame, Grid, Id, Layout, Margin, Rounding, ScrollArea, show_tooltip, vec2,
-    widgets,
+    Align, Context, Frame, Grid, Id, Layout, Margin, Rounding, ScrollArea, show_tooltip, TextStyle,
+    vec2, widgets,
 };
-use eframe::egui::TextStyle::Monospace;
 use strum::IntoEnumIterator;
 use tracing::{info, warn};
 
@@ -48,6 +47,8 @@ pub struct Qtm {
 
     tags: BTreeMap<TagData, bool>,
     is_tag_menu_open: bool,
+    new_custom_tag: TagData,
+    custom_tags: BTreeMap<TagData, bool>,
 }
 
 impl Qtm {
@@ -68,6 +69,12 @@ impl Qtm {
             description: "".to_owned(),
             tags: tags.into_iter().map(|tag| (tag, false)).collect(),
             is_tag_menu_open: false,
+            new_custom_tag: TagData {
+                text: "".to_owned(),
+                color: TagColor::BlueGrey,
+            },
+            // TODO: Use `fetch_custom` to load custom tags from cache
+            custom_tags: BTreeMap::new(),
         }
     }
 
@@ -189,27 +196,32 @@ impl eframe::App for Qtm {
             .exact_height(40.)
             .show(ctx, |ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    ui.add_enabled_ui(self.dialog.is_none() && !self.is_tag_menu_open && self.is_acceptable(), |ui| {
-                        if ui
-                            .add_sized(vec2(150., 20.), widgets::Button::new("Upload torrent"))
-                            .clicked()
-                        {
-                            info!("Begin torrent upload");
-                            self.dialog_channel
-                                .0
-                                .send(DialogMessage(
-                                    Cow::Borrowed("Creating torrent...\n\nThis may take a while..."),
-                                    false,
-                                ))
-                                .unwrap();
+                    ui.add_enabled_ui(
+                        self.dialog.is_none() && !self.is_tag_menu_open && self.is_acceptable(),
+                        |ui| {
+                            if ui
+                                .add_sized(vec2(150., 20.), widgets::Button::new("Upload torrent"))
+                                .clicked()
+                            {
+                                info!("Begin torrent upload");
+                                self.dialog_channel
+                                    .0
+                                    .send(DialogMessage(
+                                        Cow::Borrowed(
+                                            "Creating torrent...\n\nThis may take a while...",
+                                        ),
+                                        false,
+                                    ))
+                                    .unwrap();
 
-                            let content_path = self.content.clone().unwrap().0;
-                            let sender = self.dialog_channel.0.clone();
-                            std::thread::spawn(|| {
-                                create_torrent_file(content_path, sender);
-                            });
-                        }
-                    });
+                                let content_path = self.content.clone().unwrap().0;
+                                let sender = self.dialog_channel.0.clone();
+                                std::thread::spawn(|| {
+                                    create_torrent_file(content_path, sender);
+                                });
+                            }
+                        },
+                    );
 
                     // Uploading rules
                     ui.add_space(10.);
@@ -274,7 +286,7 @@ impl eframe::App for Qtm {
                                         ui.add(
                                             egui::TextEdit::singleline(&mut path_str.as_str())
                                                 .desired_width(ui.available_size().x - 120.)
-                                                .font(Monospace),
+                                                .font(TextStyle::Monospace),
                                         );
                                         ui.add(
                                             egui::TextEdit::singleline(
@@ -282,7 +294,7 @@ impl eframe::App for Qtm {
                                             )
                                                 .desired_width(120.)
                                                 .horizontal_align(Align::Max)
-                                                .font(Monospace),
+                                                .font(TextStyle::Monospace),
                                         );
                                     }
                                 });
@@ -473,6 +485,14 @@ impl eframe::App for Qtm {
                                                        }
                                                    }
 
+                                                   for mut tag in self.custom_tags
+                                                       .iter_mut()
+                                                       .filter(|t| *t.1) {
+                                                       if ui.add(Tag::from(&mut tag)).secondary_clicked() {
+                                                           *tag.1 = false;
+                                                       }
+                                                   }
+
                                                    if ui.add(Tag::new(&TagData {
                                                        text: "➕".to_owned(),
                                                        color: TagColor::BlueGrey,
@@ -484,31 +504,95 @@ impl eframe::App for Qtm {
                         ui.add_space(20.);
                     });
             });
+
         if self.is_tag_menu_open {
             egui::Window::new("tags")
-                .frame(Frame::window(&ctx.style())
-                    .rounding(Rounding::same(10.))
-                    .inner_margin(Margin::same(10.))
+                .frame(
+                    Frame::window(&ctx.style())
+                        .rounding(Rounding::same(10.))
+                        .inner_margin(Margin::same(10.)),
                 )
-                .fixed_size(vec2(400., 200.))
+                .fixed_size(vec2(400., 250.))
                 .default_pos(ctx.pointer_latest_pos().unwrap_or_default())
                 .title_bar(false)
                 .drag_bounds(ctx.screen_rect())
                 .show(ctx, |ui| {
-                    ui.with_layout(Layout::left_to_right(Align::TOP).with_main_wrap(true), |ui| {
-                        ui.style_mut().spacing.item_spacing = vec2(10., 10.);
-                        for mut tag_state in self.tags.iter_mut() {
-                            if ui.add(Tag::from(&mut tag_state)).clicked() {
-                                *tag_state.1 = !*tag_state.1;
+                    ui.with_layout(
+                        Layout::left_to_right(Align::TOP).with_main_wrap(true),
+                        |ui| {
+                            ui.style_mut().spacing.item_spacing = vec2(10., 10.);
+                            for mut tag_state in self.tags.iter_mut() {
+                                if ui.add(Tag::from(&mut tag_state)).clicked() {
+                                    *tag_state.1 = !*tag_state.1;
+                                }
                             }
-                        }
-                    });
+                            ui.add_space(ui.available_size_before_wrap().x);
+                            ui.label(" ");
+                            ui.add_space(ui.available_size_before_wrap().x);
+
+                            self.custom_tags.retain(|tag_data, is_selected | {
+                                let mut state = (tag_data, is_selected);
+                                let response = ui.add(Tag::from(&mut state));
+                                if response.clicked() {
+                                    *state.1 = !*state.1;
+                                }
+                                !response.secondary_clicked()
+                            });
+                        },
+                    );
                     ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
                         if ui
-                            .add_sized(vec2(100., 20.), widgets::Button::new("OK").rounding(Rounding::same(10.)))
-                            .clicked() {
+                            .add_sized(
+                                vec2(100., 20.),
+                                widgets::Button::new("OK").rounding(Rounding::same(10.)),
+                            )
+                            .clicked()
+                        {
                             self.is_tag_menu_open = false;
                         }
+                        ui.add_space(5.);
+                        ui.separator();
+
+                        ui.allocate_ui(vec2(ui.available_width(), 30.), |ui| {
+                            ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
+                                let style = ui.style_mut();
+                                let widgets = &mut style.visuals.widgets;
+
+                                widgets.inactive.rounding = Rounding::same(10.);
+                                widgets.active.rounding = Rounding::same(10.);
+                                widgets.hovered.rounding = Rounding::same(10.);
+                                widgets.open.rounding = Rounding::same(10.);
+
+                                style.spacing.item_spacing.x = 15.;
+                                style.spacing.button_padding = vec2(10., 4.);
+
+                                style.visuals.extreme_bg_color =
+                                    self.new_custom_tag.color.to_primary_color();
+
+                                let response = ui.add(
+                                    widgets::TextEdit::singleline(&mut self.new_custom_tag.text)
+                                        .text_color(self.new_custom_tag.color.to_secondary_color())
+                                        .desired_width(150.)
+                                        .margin(vec2(10., 4.)),
+                                );
+                                egui::ComboBox::from_id_source("custom_tag")
+                                    .selected_text(self.new_custom_tag.color.to_string())
+                                    .width(130.)
+                                    .show_ui(ui, |ui| {
+                                        for color in TagColor::iter() {
+                                            ui.selectable_value(
+                                                &mut self.new_custom_tag.color,
+                                                color,
+                                                color.to_string(),
+                                            );
+                                        }
+                                    });
+                            if (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter))) ||
+                                ui.add(widgets::Button::new("➕".to_owned())).clicked() {
+                                    self.custom_tags.insert(self.new_custom_tag.clone(), false);
+                                }
+                            });
+                        });
                     });
                     ui.allocate_space(ui.available_size());
                 });

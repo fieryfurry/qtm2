@@ -10,30 +10,36 @@ use eframe::egui::{
 };
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use strum_macros::{Display, EnumIter};
 use tracing::{info, warn};
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize_repr, Deserialize_repr)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize_repr, Deserialize_repr, Display, EnumIter)]
 #[repr(u8)]
 // https://materialui.co/colors Material UI
 pub enum TagColor {
     Red,
     Pink,
     Purple,
+    #[strum(serialize = "Deep Purple")]
     DeepPurple,
     Indigo,
     Blue,
+    #[strum(serialize = "Light Blue")]
     LightBlue,
     Cyan,
     Teal,
     Green,
+    #[strum(serialize = "Light Green")]
     LightGreen,
     Lime,
     Yellow,
     Amber,
     Orange,
+    #[strum(serialize = "Deep Orange")]
     DeepOrange,
     Brown,
     Grey,
+    #[strum(serialize = "Blue Gray")]
     BlueGrey,
 }
 
@@ -141,7 +147,7 @@ impl TagData {
             },
             TagData {
                 text: "Instagram".to_owned(),
-                color: TagColor::Pink,
+                color: TagColor::Purple,
             },
         ];
         fs::write(path, serde_json::to_string(&tags).unwrap()).unwrap();
